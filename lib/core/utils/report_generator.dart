@@ -5,7 +5,10 @@ import 'package:bms/core/models/battery.dart';
 import 'package:intl/intl.dart';
 
 class ReportGenerator {
-  static Future<void> generateBuyReport(List<Battery> batteries) async {
+  static Future<void> generateBuyReport(
+    List<Battery> batteries, {
+    int? roundToMultiplesOf,
+  }) async {
     final pdf = pw.Document();
     final now = DateTime.now();
     final dateStr = DateFormat('dd/MM/yyyy HH:mm').format(now);
@@ -23,27 +26,47 @@ class ReportGenerator {
         children: [
           pw.Padding(
             padding: const pw.EdgeInsets.all(5),
-            child: pw.Text('Produto',
-                style: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white)),
+            child: pw.Text(
+              'Produto',
+              style: pw.TextStyle(
+                fontWeight: pw.FontWeight.bold,
+                color: PdfColors.white,
+              ),
+            ),
           ),
           pw.Padding(
             padding: const pw.EdgeInsets.all(5),
-            child: pw.Text('Qtd',
-                style: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white),
-                textAlign: pw.TextAlign.center),
+            child: pw.Text(
+              'Qtd',
+              style: pw.TextStyle(
+                fontWeight: pw.FontWeight.bold,
+                color: PdfColors.white,
+              ),
+              textAlign: pw.TextAlign.center,
+            ),
           ),
           pw.Padding(
             padding: const pw.EdgeInsets.all(5),
-            child: pw.Text('Cód. Barras',
-                style: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white),
-                textAlign: pw.TextAlign.center),
+            child: pw.Text(
+              'Cód. Barras',
+              style: pw.TextStyle(
+                fontWeight: pw.FontWeight.bold,
+                color: PdfColors.white,
+              ),
+              textAlign: pw.TextAlign.center,
+            ),
           ),
         ],
       ),
     );
 
     for (final b in batteries) {
-      final needed = (b.minStockThreshold - b.quantity).clamp(0, 9999);
+      int needed = (b.minStockThreshold - b.quantity).clamp(0, 9999);
+
+      if (roundToMultiplesOf != null && roundToMultiplesOf > 0 && needed > 0) {
+        needed = (needed / roundToMultiplesOf).ceil() * roundToMultiplesOf;
+      }
+
       totalItems++;
       totalQtyToBuy += needed;
 
@@ -56,24 +79,33 @@ class ReportGenerator {
               child: pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
-                  pw.Text('${b.brand} ${b.model}',
-                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                  pw.Text(
+                    '${b.brand} ${b.model}',
+                    style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                  ),
                   pw.Text('Tipo: ${b.type} | Pack: ${b.packSize}'),
                 ],
               ),
             ),
             pw.Padding(
               padding: const pw.EdgeInsets.all(5),
-              child: pw.Text(needed.toString(),
-                  textAlign: pw.TextAlign.center,
-                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14)),
+              child: pw.Text(
+                needed.toString(),
+                textAlign: pw.TextAlign.center,
+                style: pw.TextStyle(
+                  fontWeight: pw.FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
             ),
             pw.Padding(
               padding: const pw.EdgeInsets.all(5),
               child: b.barcode.isNotEmpty
-                  ? pw.Text(b.barcode,
+                  ? pw.Text(
+                      b.barcode,
                       textAlign: pw.TextAlign.center,
-                      style: const pw.TextStyle(fontSize: 10))
+                      style: const pw.TextStyle(fontSize: 10),
+                    )
                   : pw.Text('-', textAlign: pw.TextAlign.center),
             ),
           ],
@@ -92,8 +124,13 @@ class ReportGenerator {
               child: pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
-                  pw.Text('Relatório de Compras - Battery Buddy',
-                      style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold)),
+                  pw.Text(
+                    'Relatório de Compras - Battery Buddy',
+                    style: pw.TextStyle(
+                      fontSize: 20,
+                      fontWeight: pw.FontWeight.bold,
+                    ),
+                  ),
                   pw.Text(dateStr, style: const pw.TextStyle(fontSize: 10)),
                 ],
               ),
@@ -113,11 +150,18 @@ class ReportGenerator {
             pw.Row(
               mainAxisAlignment: pw.MainAxisAlignment.end,
               children: [
-                pw.Text('Total de Itens: $totalItems',
-                    style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                pw.Text(
+                  'Total de Itens: $totalItems',
+                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                ),
                 pw.SizedBox(width: 20),
-                pw.Text('Total a Comprar: $totalQtyToBuy',
-                    style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 16)),
+                pw.Text(
+                  'Total a Comprar: $totalQtyToBuy',
+                  style: pw.TextStyle(
+                    fontWeight: pw.FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
               ],
             ),
           ];

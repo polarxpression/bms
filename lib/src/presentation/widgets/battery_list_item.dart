@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:bms/src/data/models/battery.dart';
-import 'package:flutter/foundation.dart';
 
 class BatteryListItem extends StatelessWidget {
   final Battery battery;
@@ -16,17 +15,22 @@ class BatteryListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final locationText = battery.location != null
-        ? describeEnum(battery.location!)
+        ? battery.location!.name
         : 'Unknown';
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
       elevation: 2.0,
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16.0,
+          vertical: 8.0,
+        ),
         title: Text(
           battery.model,
-          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
         ),
         subtitle: Text(
           'Brand: ${battery.brand}\nBarcode: ${battery.barcode}',
@@ -38,7 +42,9 @@ class BatteryListItem extends StatelessWidget {
           children: [
             Text(
               'Qty: ${battery.quantity.toStringAsFixed(0)}',
-              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 4),
             Chip(

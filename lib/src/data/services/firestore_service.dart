@@ -8,7 +8,9 @@ class FirestoreService {
   late final CollectionReference<Battery> _batteriesRef;
 
   FirestoreService() {
-    _batteriesRef = _db.collection('batteries').withConverter<Battery>(
+    _batteriesRef = _db
+        .collection('batteries')
+        .withConverter<Battery>(
           fromFirestore: (snapshot, _) => Battery.fromJson(snapshot.data()!),
           toFirestore: (battery, _) => battery.toJson(),
         );
@@ -17,11 +19,9 @@ class FirestoreService {
   /// Returns a stream of all batteries, ordered by brand and model.
   /// The UI will listen to this stream for real-time updates.
   Stream<List<Battery>> watchBatteries() {
-    return _batteriesRef
-        .orderBy('brand')
-        .orderBy('model')
-        .snapshots()
-        .map((snapshot) {
+    return _batteriesRef.orderBy('brand').orderBy('model').snapshots().map((
+      snapshot,
+    ) {
       return snapshot.docs.map((doc) => doc.data()).toList();
     });
   }

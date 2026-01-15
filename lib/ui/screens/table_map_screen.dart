@@ -13,7 +13,8 @@ class TableMapScreen extends StatefulWidget {
 class _TableMapScreenState extends State<TableMapScreen> {
   static const double cellSize = 120.0;
   static const double cellSpacing = 8.0;
-  final TransformationController _transformationController = TransformationController();
+  final TransformationController _transformationController =
+      TransformationController();
   bool _hasCentered = false;
 
   @override
@@ -40,35 +41,38 @@ class _TableMapScreenState extends State<TableMapScreen> {
     // plus half a cell size to be perfectly centered on the "0,0" cell.
     const double targetX = 2000.0 + (cellSize / 2);
     const double targetY = 2000.0 + (cellSize / 2);
-    
+
     // Calculate translation to bring target to center of screen
     // Note: The app bar height and status bar might affect exact Y, but this is close enough.
     final double x = -targetX + (size.width / 2);
-    final double y = -targetY + ((size.height - kToolbarHeight - kBottomNavigationBarHeight) / 2);
+    final double y =
+        -targetY +
+        ((size.height - kToolbarHeight - kBottomNavigationBarHeight) / 2);
 
     _transformationController.value = Matrix4.identity()
-      ..translate(x, y);
+      ..setTranslationRaw(x, y, 0);
   }
 
   Widget _buildMapSelector(BuildContext context, AppState state) {
     if (state.maps.isEmpty) return const Text('Mapa da Mesa');
-    
+
     return DropdownButtonHideUnderline(
       child: DropdownButton<String>(
         value: state.currentMap?.id,
         dropdownColor: const Color(0xFF1E1E1E),
         icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
-        style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+        ),
         onChanged: (String? newId) {
           if (newId != null) {
             state.selectMap(newId);
           }
         },
         items: state.maps.map<DropdownMenuItem<String>>((map) {
-          return DropdownMenuItem<String>(
-            value: map.id,
-            child: Text(map.name),
-          );
+          return DropdownMenuItem<String>(value: map.id, child: Text(map.name));
         }).toList(),
       ),
     );
@@ -98,10 +102,19 @@ class _TableMapScreenState extends State<TableMapScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           IconButton(
-                            icon: const Icon(Icons.edit, color: Colors.blueAccent),
+                            icon: const Icon(
+                              Icons.edit,
+                              color: Colors.blueAccent,
+                            ),
                             onPressed: () {
                               Navigator.pop(ctx);
-                              _showMapForm(context, state, mapId: map.id, initName: map.name, initPurpose: map.purpose);
+                              _showMapForm(
+                                context,
+                                state,
+                                mapId: map.id,
+                                initName: map.name,
+                                initPurpose: map.purpose,
+                              );
                             },
                           ),
                           IconButton(
@@ -112,9 +125,14 @@ class _TableMapScreenState extends State<TableMapScreen> {
                                 context: context,
                                 builder: (delCtx) => AlertDialog(
                                   title: const Text('Excluir Mapa?'),
-                                  content: Text('Tem certeza que deseja excluir "${map.name}"? Todas as posições serão perdidas.'),
+                                  content: Text(
+                                    'Tem certeza que deseja excluir "${map.name}"? Todas as posições serão perdidas.',
+                                  ),
                                   actions: [
-                                    TextButton(onPressed: () => Navigator.pop(delCtx), child: const Text('Cancelar')),
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(delCtx),
+                                      child: const Text('Cancelar'),
+                                    ),
                                     TextButton(
                                       onPressed: () async {
                                         Navigator.pop(delCtx); // Pop confirm
@@ -123,12 +141,15 @@ class _TableMapScreenState extends State<TableMapScreen> {
                                         // Since we popped confirm, we are back in manager. The list will rebuild if we use Stateful/AnimatedBuilder?
                                         // We are in AlertDialog which doesn't auto rebuild on provider change unless wrapped.
                                         // Let's close manager to be safe/simple.
-                                        if (context.mounted) Navigator.pop(ctx); 
+                                        if (context.mounted) Navigator.pop(ctx);
                                       },
-                                      child: const Text('Excluir', style: TextStyle(color: Colors.red)),
+                                      child: const Text(
+                                        'Excluir',
+                                        style: TextStyle(color: Colors.red),
+                                      ),
                                     ),
                                   ],
-                                )
+                                ),
                               );
                             },
                           ),
@@ -155,16 +176,25 @@ class _TableMapScreenState extends State<TableMapScreen> {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Fechar')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Fechar'),
+          ),
         ],
-      )
+      ),
     );
   }
 
-  void _showMapForm(BuildContext context, AppState state, {String? mapId, String? initName, String? initPurpose}) {
+  void _showMapForm(
+    BuildContext context,
+    AppState state, {
+    String? mapId,
+    String? initName,
+    String? initPurpose,
+  }) {
     final nameCtrl = TextEditingController(text: initName);
     final purpCtrl = TextEditingController(text: initPurpose);
-    
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -180,28 +210,40 @@ class _TableMapScreenState extends State<TableMapScreen> {
             const SizedBox(height: 12),
             TextField(
               controller: purpCtrl,
-              decoration: const InputDecoration(labelText: 'Propósito / Descrição'),
+              decoration: const InputDecoration(
+                labelText: 'Propósito / Descrição',
+              ),
               textCapitalization: TextCapitalization.sentences,
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancelar'),
+          ),
           TextButton(
             onPressed: () async {
               if (nameCtrl.text.trim().isEmpty) return;
-              
+
               if (mapId == null) {
-                await state.createMap(nameCtrl.text.trim(), purpCtrl.text.trim());
+                await state.createMap(
+                  nameCtrl.text.trim(),
+                  purpCtrl.text.trim(),
+                );
               } else {
-                await state.updateMap(mapId, nameCtrl.text.trim(), purpCtrl.text.trim());
+                await state.updateMap(
+                  mapId,
+                  nameCtrl.text.trim(),
+                  purpCtrl.text.trim(),
+                );
               }
               if (context.mounted) Navigator.pop(ctx);
             },
             child: const Text('Salvar'),
           ),
         ],
-      )
+      ),
     );
   }
 
@@ -225,7 +267,7 @@ class _TableMapScreenState extends State<TableMapScreen> {
           '${x + 1},$y',
           '${x - 1},$y',
           '$x,${y + 1}',
-          '$x,${y - 1}'
+          '$x,${y - 1}',
         ];
 
         for (var n in neighbors) {
@@ -238,7 +280,7 @@ class _TableMapScreenState extends State<TableMapScreen> {
 
     // Combine all cells to render
     final List<Widget> cellWidgets = [];
-    
+
     // Helper to position cells
     // We'll center 0,0 at a large offset
     const double offsetX = 2000.0;
@@ -249,13 +291,20 @@ class _TableMapScreenState extends State<TableMapScreen> {
       final parts = key.split(',');
       final x = int.parse(parts[0]);
       final y = int.parse(parts[1]);
-      
+
       final battery = batteries.firstWhere(
-        (b) => b.id == batteryId, 
+        (b) => b.id == batteryId,
         orElse: () => Battery(
-          id: 'unknown', name: 'Unknown', type: '?', brand: '?', model: '?', 
-          barcode: '', quantity: 0, purchaseDate: DateTime.now(), lastChanged: DateTime.now()
-        )
+          id: 'unknown',
+          name: 'Unknown',
+          type: '?',
+          brand: '?',
+          model: '?',
+          barcode: '',
+          quantity: 0,
+          purchaseDate: DateTime.now(),
+          lastChanged: DateTime.now(),
+        ),
       );
 
       cellWidgets.add(
@@ -263,7 +312,7 @@ class _TableMapScreenState extends State<TableMapScreen> {
           left: offsetX + (x * (cellSize + cellSpacing)),
           top: offsetY + (y * (cellSize + cellSpacing)),
           child: _buildOccupiedCell(context, x, y, battery, state),
-        )
+        ),
       );
     });
 
@@ -278,7 +327,7 @@ class _TableMapScreenState extends State<TableMapScreen> {
           left: offsetX + (x * (cellSize + cellSpacing)),
           top: offsetY + (y * (cellSize + cellSpacing)),
           child: _buildEmptyCell(context, x, y, state),
-        )
+        ),
       );
     }
 
@@ -294,7 +343,7 @@ class _TableMapScreenState extends State<TableMapScreen> {
           IconButton(
             icon: const Icon(Icons.center_focus_strong),
             onPressed: _centerMap,
-          )
+          ),
         ],
       ),
       backgroundColor: const Color(0xFF141414), // Dark background
@@ -310,11 +359,7 @@ class _TableMapScreenState extends State<TableMapScreen> {
           child: Stack(
             children: [
               // Grid background reference (optional)
-              Positioned.fill(
-                child: CustomPaint(
-                  painter: _GridPainter(),
-                ),
-              ),
+              Positioned.fill(child: CustomPaint(painter: _GridPainter())),
               ...cellWidgets,
             ],
           ),
@@ -323,7 +368,13 @@ class _TableMapScreenState extends State<TableMapScreen> {
     );
   }
 
-  Widget _buildOccupiedCell(BuildContext context, int x, int y, Battery battery, AppState state) {
+  Widget _buildOccupiedCell(
+    BuildContext context,
+    int x,
+    int y,
+    Battery battery,
+    AppState state,
+  ) {
     return DragTarget<String>(
       onWillAcceptWithDetails: (details) => details.data != '$x,$y',
       onAcceptWithDetails: (details) {
@@ -358,7 +409,13 @@ class _TableMapScreenState extends State<TableMapScreen> {
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
             ),
-            child: const Center(child: Icon(Icons.drag_indicator, color: Colors.white10, size: 32)),
+            child: const Center(
+              child: Icon(
+                Icons.drag_indicator,
+                color: Colors.white10,
+                size: 32,
+              ),
+            ),
           ),
           child: GestureDetector(
             onTap: () => _showCellDetails(context, x, y, battery, state),
@@ -366,12 +423,18 @@ class _TableMapScreenState extends State<TableMapScreen> {
               duration: const Duration(milliseconds: 200),
               curve: Curves.easeInOut,
               decoration: BoxDecoration(
-                border: isHovered 
-                    ? Border.all(color: Colors.greenAccent, width: 3) 
-                    : null, 
+                border: isHovered
+                    ? Border.all(color: Colors.greenAccent, width: 3)
+                    : null,
                 borderRadius: BorderRadius.circular(8),
-                boxShadow: isHovered 
-                    ? [BoxShadow(color: Colors.greenAccent.withValues(alpha: 0.4), blurRadius: 8, spreadRadius: 2)]
+                boxShadow: isHovered
+                    ? [
+                        BoxShadow(
+                          color: Colors.greenAccent.withValues(alpha: 0.4),
+                          blurRadius: 8,
+                          spreadRadius: 2,
+                        ),
+                      ]
                     : [],
               ),
               child: Stack(
@@ -385,8 +448,18 @@ class _TableMapScreenState extends State<TableMapScreen> {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.swap_horiz, color: Colors.greenAccent, size: 32),
-                              Text("TROCAR", style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold)),
+                              Icon(
+                                Icons.swap_horiz,
+                                color: Colors.greenAccent,
+                                size: 32,
+                              ),
+                              Text(
+                                "TROCAR",
+                                style: TextStyle(
+                                  color: Colors.greenAccent,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -408,12 +481,25 @@ class _TableMapScreenState extends State<TableMapScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFF1E1E1E),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.5), width: 1),
-        boxShadow: isFeedback ? [
-           BoxShadow(color: Colors.black.withValues(alpha: 0.5), blurRadius: 10, offset: const Offset(0, 5))
-        ] : [
-           BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 4, offset: const Offset(2, 2))
-        ],
+        border: Border.all(
+          color: Colors.blueAccent.withValues(alpha: 0.5),
+          width: 1,
+        ),
+        boxShadow: isFeedback
+            ? [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.5),
+                  blurRadius: 10,
+                  offset: const Offset(0, 5),
+                ),
+              ]
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  blurRadius: 4,
+                  offset: const Offset(2, 2),
+                ),
+              ],
       ),
       padding: const EdgeInsets.all(4),
       child: Stack(
@@ -422,29 +508,53 @@ class _TableMapScreenState extends State<TableMapScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                 Text('${battery.brand} • ${battery.type}', 
-                   style: const TextStyle(fontSize: 10, color: Colors.blueAccent, fontWeight: FontWeight.bold),
-                   textAlign: TextAlign.center,
-                   maxLines: 1, overflow: TextOverflow.ellipsis
-                 ),
-                 const SizedBox(height: 2),
-                 if (battery.imageUrl.isNotEmpty)
-                    Expanded(
-                      child: Image.network(battery.imageUrl, fit: BoxFit.contain, errorBuilder: (_,__,___) => const Icon(Icons.battery_std, size: 30, color: Colors.grey)),
-                    )
-                 else
-                    const Expanded(child: Icon(Icons.battery_std, size: 30, color: Colors.grey)),
-                 const SizedBox(height: 2),
-                 Text(battery.model, 
-                   style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
-                   textAlign: TextAlign.center,
-                   maxLines: 1, 
-                   overflow: TextOverflow.ellipsis
-                 ),
-                 Text(
-                   'Pack x${battery.packSize} • Gôn: ${battery.gondolaQuantity}', 
-                   style: const TextStyle(fontSize: 9, color: Colors.grey)
-                 ),
+                Text(
+                  '${battery.brand} • ${battery.type}',
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: Colors.blueAccent,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                if (battery.imageUrl.isNotEmpty)
+                  Expanded(
+                    child: Image.network(
+                      battery.imageUrl,
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) => const Icon(
+                        Icons.battery_std,
+                        size: 30,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  )
+                else
+                  const Expanded(
+                    child: Icon(
+                      Icons.battery_std,
+                      size: 30,
+                      color: Colors.grey,
+                    ),
+                  ),
+                const SizedBox(height: 2),
+                Text(
+                  battery.model,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  'Pack x${battery.packSize} • Gôn: ${battery.gondolaQuantity}',
+                  style: const TextStyle(fontSize: 9, color: Colors.grey),
+                ),
               ],
             ),
           ),
@@ -452,7 +562,11 @@ class _TableMapScreenState extends State<TableMapScreen> {
             const Positioned(
               top: 0,
               right: 0,
-              child: Icon(Icons.drag_indicator, size: 16, color: Colors.white24),
+              child: Icon(
+                Icons.drag_indicator,
+                size: 16,
+                color: Colors.white24,
+              ),
             ),
         ],
       ),
@@ -478,22 +592,35 @@ class _TableMapScreenState extends State<TableMapScreen> {
             width: cellSize,
             height: cellSize,
             decoration: BoxDecoration(
-              color: isHovered ? Colors.blueAccent.withValues(alpha: 0.3) : Colors.white.withValues(alpha: 0.05),
+              color: isHovered
+                  ? Colors.blueAccent.withValues(alpha: 0.3)
+                  : Colors.white.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: isHovered ? Colors.blueAccent : Colors.grey.withValues(alpha: 0.3), 
+                color: isHovered
+                    ? Colors.blueAccent
+                    : Colors.grey.withValues(alpha: 0.3),
                 style: BorderStyle.solid,
                 width: isHovered ? 2 : 1,
               ),
-              boxShadow: isHovered 
-                  ? [BoxShadow(color: Colors.blueAccent.withValues(alpha: 0.4), blurRadius: 8, spreadRadius: 1)]
+              boxShadow: isHovered
+                  ? [
+                      BoxShadow(
+                        color: Colors.blueAccent.withValues(alpha: 0.4),
+                        blurRadius: 8,
+                        spreadRadius: 1,
+                      ),
+                    ]
                   : [],
             ),
             child: Center(
               child: AnimatedScale(
                 scale: isHovered ? 1.2 : 1.0,
                 duration: const Duration(milliseconds: 200),
-                child: Icon(Icons.add, color: isHovered ? Colors.white : Colors.grey),
+                child: Icon(
+                  Icons.add,
+                  color: isHovered ? Colors.white : Colors.grey,
+                ),
               ),
             ),
           ),
@@ -502,21 +629,29 @@ class _TableMapScreenState extends State<TableMapScreen> {
     );
   }
 
-  void _showCellDetails(BuildContext context, int x, int y, Battery initialBattery, AppState state) {
+  void _showCellDetails(
+    BuildContext context,
+    int x,
+    int y,
+    Battery initialBattery,
+    AppState state,
+  ) {
     showDialog(
-      context: context, 
+      context: context,
       builder: (ctx) => AnimatedBuilder(
         animation: state,
         builder: (context, child) {
           // Re-fetch battery to get live updates
           final battery = state.batteries.firstWhere(
-            (b) => b.id == initialBattery.id, 
-            orElse: () => initialBattery
+            (b) => b.id == initialBattery.id,
+            orElse: () => initialBattery,
           );
 
           return Dialog(
             backgroundColor: const Color(0xFF1E1E1E),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -527,39 +662,69 @@ class _TableMapScreenState extends State<TableMapScreen> {
                     height: 120,
                     decoration: BoxDecoration(
                       color: Colors.black26,
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                      image: battery.imageUrl.isNotEmpty 
-                          ? DecorationImage(image: NetworkImage(battery.imageUrl), fit: BoxFit.contain)
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(16),
+                      ),
+                      image: battery.imageUrl.isNotEmpty
+                          ? DecorationImage(
+                              image: NetworkImage(battery.imageUrl),
+                              fit: BoxFit.contain,
+                            )
                           : null,
                     ),
-                    child: battery.imageUrl.isEmpty 
-                        ? const Center(child: Icon(Icons.battery_std, size: 64, color: Colors.grey)) 
+                    child: battery.imageUrl.isEmpty
+                        ? const Center(
+                            child: Icon(
+                              Icons.battery_std,
+                              size: 64,
+                              color: Colors.grey,
+                            ),
+                          )
                         : null,
                   ),
-                  
+
                   Padding(
                     padding: const EdgeInsets.all(16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(battery.name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
-                        Text('${battery.brand} • ${battery.model}', style: const TextStyle(color: Colors.blueAccent)),
+                        Text(
+                          battery.name,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        Text(
+                          '${battery.brand} • ${battery.model}',
+                          style: const TextStyle(color: Colors.blueAccent),
+                        ),
                         const SizedBox(height: 16),
-                        
+
                         // Details Grid
                         Wrap(
                           spacing: 16,
                           runSpacing: 8,
                           children: [
                             _DetailBadge(label: 'Tipo', value: battery.type),
-                            _DetailBadge(label: 'Pack', value: 'x${battery.packSize}'),
-                            _DetailBadge(label: 'Estoque', value: '${battery.quantity}'),
+                            _DetailBadge(
+                              label: 'Pack',
+                              value: 'x${battery.packSize}',
+                            ),
+                            _DetailBadge(
+                              label: 'Estoque',
+                              value: '${battery.quantity}',
+                            ),
                             _DetailBadge(label: 'Local', value: '$x, $y'),
                           ],
                         ),
-                        
+
                         const SizedBox(height: 16),
-                        const Text('Qtd. Gôndola', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                        const Text(
+                          'Qtd. Gôndola',
+                          style: TextStyle(color: Colors.grey, fontSize: 12),
+                        ),
                         Container(
                           margin: const EdgeInsets.only(top: 4),
                           padding: const EdgeInsets.all(8),
@@ -572,21 +737,42 @@ class _TableMapScreenState extends State<TableMapScreen> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               IconButton(
-                                icon: const Icon(Icons.remove_circle_outline, color: Colors.redAccent),
-                                onPressed: () => state.adjustGondolaQuantity(battery, -1),
+                                icon: const Icon(
+                                  Icons.remove_circle_outline,
+                                  color: Colors.redAccent,
+                                ),
+                                onPressed: () =>
+                                    state.adjustGondolaQuantity(battery, -1),
                               ),
                               Row(
                                 crossAxisAlignment: CrossAxisAlignment.baseline,
                                 textBaseline: TextBaseline.alphabetic,
                                 children: [
-                                  Text('${battery.gondolaQuantity}', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
+                                  Text(
+                                    '${battery.gondolaQuantity}',
+                                    style: const TextStyle(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
                                   if (battery.gondolaLimit > 0)
-                                    Text('/${battery.gondolaLimit}', style: const TextStyle(fontSize: 14, color: Colors.grey)),
+                                    Text(
+                                      '/${battery.gondolaLimit}',
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
                                 ],
                               ),
                               IconButton(
-                                icon: const Icon(Icons.add_circle_outline, color: Colors.greenAccent),
-                                onPressed: () => state.adjustGondolaQuantity(battery, 1),
+                                icon: const Icon(
+                                  Icons.add_circle_outline,
+                                  color: Colors.greenAccent,
+                                ),
+                                onPressed: () =>
+                                    state.adjustGondolaQuantity(battery, 1),
                               ),
                             ],
                           ),
@@ -594,7 +780,10 @@ class _TableMapScreenState extends State<TableMapScreen> {
 
                         if (battery.notes.isNotEmpty) ...[
                           const SizedBox(height: 16),
-                          const Text('Notas', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                          const Text(
+                            'Notas',
+                            style: TextStyle(color: Colors.grey, fontSize: 12),
+                          ),
                           const SizedBox(height: 4),
                           Container(
                             width: double.infinity,
@@ -602,31 +791,46 @@ class _TableMapScreenState extends State<TableMapScreen> {
                             decoration: BoxDecoration(
                               color: Colors.yellowAccent.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.yellowAccent.withValues(alpha: 0.3)),
+                              border: Border.all(
+                                color: Colors.yellowAccent.withValues(
+                                  alpha: 0.3,
+                                ),
+                              ),
                             ),
-                            child: Text(battery.notes, style: const TextStyle(color: Colors.white70, fontStyle: FontStyle.italic)),
+                            child: Text(
+                              battery.notes,
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
                           ),
                         ],
                       ],
                     ),
                   ),
-                  
+
                   const Divider(height: 1, color: Colors.white10),
                   Padding(
                     padding: const EdgeInsets.all(8),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Fechar')),
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          child: const Text('Fechar'),
+                        ),
                         const SizedBox(width: 8),
                         TextButton.icon(
                           icon: const Icon(Icons.delete_outline, size: 18),
                           label: const Text('Remover do Mapa'),
-                          style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.redAccent,
+                          ),
                           onPressed: () {
                             state.removeBatteryFromMap(x, y);
                             Navigator.pop(ctx);
-                          }, 
+                          },
                         ),
                       ],
                     ),
@@ -635,27 +839,32 @@ class _TableMapScreenState extends State<TableMapScreen> {
               ),
             ),
           );
-        }
-      )
+        },
+      ),
     );
   }
 
   void _showBatteryPicker(BuildContext context, int x, int y, AppState state) {
     showModalBottomSheet(
-      context: context, 
+      context: context,
       isScrollControlled: true,
       backgroundColor: const Color(0xFF141414),
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (ctx) {
         return StatefulBuilder(
           builder: (context, setSheetState) {
-            return _BatteryPickerContent(state: state, onSelected: (id) {
-              state.placeBatteryOnMap(x, y, id);
-              Navigator.pop(ctx);
-            });
-          }
+            return _BatteryPickerContent(
+              state: state,
+              onSelected: (id) {
+                state.placeBatteryOnMap(x, y, id);
+                Navigator.pop(ctx);
+              },
+            );
+          },
         );
-      }
+      },
     );
   }
 }
@@ -689,58 +898,105 @@ class _BatteryPickerContentState extends State<_BatteryPickerContent> {
 
     return Container(
       padding: EdgeInsets.only(
-        left: 16, right: 16, top: 16,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 16
+        left: 16,
+        right: 16,
+        top: 16,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
       ),
       height: MediaQuery.of(context).size.height * 0.7,
       child: Column(
         children: [
-          const Text('Selecionar Bateria (Gôndola)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+          const Text(
+            'Selecionar Bateria (Gôndola)',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
           const SizedBox(height: 16),
           TextField(
             controller: _searchController,
             onChanged: (v) => setState(() => _query = v),
             style: const TextStyle(color: Colors.white),
             decoration: InputDecoration(
-              hintText: 'Procurar baterias...', 
+              hintText: 'Procurar baterias...',
               hintStyle: const TextStyle(color: Colors.grey),
               prefixIcon: const Icon(Icons.search, color: Colors.blueAccent),
-              suffixIcon: _query.isNotEmpty ? IconButton(
-                icon: const Icon(Icons.clear, color: Colors.grey),
-                onPressed: () {
-                  setState(() => _query = '');
-                  _searchController.clear();
-                },
-              ) : null,
+              suffixIcon: _query.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, color: Colors.grey),
+                      onPressed: () {
+                        setState(() => _query = '');
+                        _searchController.clear();
+                      },
+                    )
+                  : null,
               filled: true,
               fillColor: Colors.white.withValues(alpha: 0.05),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.blueAccent, width: 1)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(
+                  color: Colors.blueAccent,
+                  width: 1,
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 10),
           Expanded(
-            child: gondolaItems.isEmpty 
-              ? Center(child: Text(_query.isEmpty ? 'Nenhuma bateria de gôndola encontrada.' : 'Nenhum resultado para "$_query"', style: const TextStyle(color: Colors.grey)))
-              : ListView.builder(
-                  itemCount: gondolaItems.length,
-                  itemBuilder: (ctx, idx) {
-                    final b = gondolaItems[idx];
-                    return ListTile(
-                      leading: b.imageUrl.isNotEmpty 
-                        ? Image.network(b.imageUrl, width: 30, height: 30, errorBuilder: (_,__,___) => const Icon(Icons.battery_std, color: Colors.grey)) 
-                        : const Icon(Icons.battery_std, color: Colors.grey),
-                      title: Text(b.name, style: const TextStyle(color: Colors.white)),
-                      subtitle: Text(
-                        '${b.brand} • ${b.model} • ${b.type} • x${b.packSize}',
-                        style: const TextStyle(color: Colors.grey, fontSize: 12),
-                      ),
-                      trailing: Text('Gôn: ${b.gondolaQuantity}', style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold)),
-                      onTap: () => widget.onSelected(b.id),
-                    );
-                  },
-                ),
-          )
+            child: gondolaItems.isEmpty
+                ? Center(
+                    child: Text(
+                      _query.isEmpty
+                          ? 'Nenhuma bateria de gôndola encontrada.'
+                          : 'Nenhum resultado para "$_query"',
+                      style: const TextStyle(color: Colors.grey),
+                    ),
+                  )
+                : ListView.builder(
+                    itemCount: gondolaItems.length,
+                    itemBuilder: (ctx, idx) {
+                      final b = gondolaItems[idx];
+                      return ListTile(
+                        leading: b.imageUrl.isNotEmpty
+                            ? Image.network(
+                                b.imageUrl,
+                                width: 30,
+                                height: 30,
+                                errorBuilder: (_, __, ___) => const Icon(
+                                  Icons.battery_std,
+                                  color: Colors.grey,
+                                ),
+                              )
+                            : const Icon(Icons.battery_std, color: Colors.grey),
+                        title: Text(
+                          b.name,
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                        subtitle: Text(
+                          '${b.brand} • ${b.model} • ${b.type} • x${b.packSize}',
+                          style: const TextStyle(
+                            color: Colors.grey,
+                            fontSize: 12,
+                          ),
+                        ),
+                        trailing: Text(
+                          'Gôn: ${b.gondolaQuantity}',
+                          style: const TextStyle(
+                            color: Colors.blueAccent,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        onTap: () => widget.onSelected(b.id),
+                      );
+                    },
+                  ),
+          ),
         ],
       ),
     );
@@ -765,7 +1021,14 @@ class _DetailBadge extends StatelessWidget {
         children: [
           Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),
           const SizedBox(height: 2),
-          Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
         ],
       ),
     );
@@ -778,18 +1041,18 @@ class _GridPainter extends CustomPainter {
     final paint = Paint()
       ..color = Colors.white.withValues(alpha: 0.05)
       ..strokeWidth = 1;
-      
+
     // Draw a large grid for reference (every 128px)
     // Centered at 2000, 2000
-    const step = 128.0; 
+    const step = 128.0;
     const center = 2000.0;
-    
+
     // Draw lines
     for (double i = center - 2000; i <= center + 2000; i += step) {
       canvas.drawLine(Offset(i, 0), Offset(i, 4000), paint);
       canvas.drawLine(Offset(0, i), Offset(4000, i), paint);
     }
-    
+
     // Draw Axis
     paint.color = Colors.blueAccent.withValues(alpha: 0.2);
     paint.strokeWidth = 2;

@@ -4,9 +4,9 @@ import 'package:bms/core/models/battery.dart';
 class SearchQueryParser {
   static bool matches(Battery b, String query) {
     if (query.trim().isEmpty) return true;
-    
+
     List<String> tokens = _tokenize(query);
-    
+
     for (String token in tokens) {
       if (!_evaluateToken(b, token)) {
         return false;
@@ -42,7 +42,9 @@ class SearchQueryParser {
         buffer.write(char);
       }
     }
-    if (buffer.isNotEmpty) tokens.add(buffer.toString());
+    if (buffer.isNotEmpty) {
+      tokens.add(buffer.toString());
+    }
     return tokens;
   }
 
@@ -64,7 +66,11 @@ class SearchQueryParser {
     }
 
     if (token.length >= 2 && token.startsWith('"') && token.endsWith('"')) {
-       return _matchAnyField(b, token.substring(1, token.length - 1), isLiteral: true);
+      return _matchAnyField(
+        b,
+        token.substring(1, token.length - 1),
+        isLiteral: true,
+      );
     }
 
     if (token.contains(':')) {
@@ -80,7 +86,9 @@ class SearchQueryParser {
     String expression = token.substring(colonIndex + 1).toLowerCase();
 
     bool isLiteral = false;
-    if (expression.length >= 2 && expression.startsWith('"') && expression.endsWith('"')) {
+    if (expression.length >= 2 &&
+        expression.startsWith('"') &&
+        expression.endsWith('"')) {
       expression = expression.substring(1, expression.length - 1);
       isLiteral = true;
     }
@@ -89,12 +97,21 @@ class SearchQueryParser {
     String valStr = expression;
 
     if (!isLiteral) {
-      if (expression.startsWith('>=')) { op = '>='; valStr = expression.substring(2); }
-      else if (expression.startsWith('<=')) { op = '<='; valStr = expression.substring(2); }
-      else if (expression.startsWith('>')) { op = '>'; valStr = expression.substring(1); }
-      else if (expression.startsWith('<')) { op = '<'; valStr = expression.substring(1); }
+      if (expression.startsWith('>=')) {
+        op = '>=';
+        valStr = expression.substring(2);
+      } else if (expression.startsWith('<=')) {
+        op = '<=';
+        valStr = expression.substring(2);
+      } else if (expression.startsWith('>')) {
+        op = '>';
+        valStr = expression.substring(1);
+      } else if (expression.startsWith('<')) {
+        op = '<';
+        valStr = expression.substring(1);
+      }
     }
-    
+
     // NEW: Added aliases for gondola and stock searches
     if (['qty', 'quantity', 'count', 'estoque', 'stock'].contains(key)) {
       return _compareInt(b.quantity, op, int.tryParse(valStr) ?? 0);
@@ -108,14 +125,26 @@ class SearchQueryParser {
     if (['pack', 'packsize'].contains(key)) {
       return _compareInt(b.packSize, op, int.tryParse(valStr) ?? 0);
     }
-    
+
     String? fieldVal;
-    if (key == 'brand' || key == 'marca') fieldVal = b.brand;
-    if (key == 'model' || key == 'modelo') fieldVal = b.model;
-    if (key == 'type' || key == 'tipo') fieldVal = b.type;
-    if (key == 'loc' || key == 'location' || key == 'local') fieldVal = b.location;
-    if (key == 'volt' || key == 'voltage') fieldVal = b.voltage;
-    if (key == 'chem' || key == 'chemistry') fieldVal = b.chemistry;
+    if (key == 'brand' || key == 'marca') {
+      fieldVal = b.brand;
+    }
+    if (key == 'model' || key == 'modelo') {
+      fieldVal = b.model;
+    }
+    if (key == 'type' || key == 'tipo') {
+      fieldVal = b.type;
+    }
+    if (key == 'loc' || key == 'location' || key == 'local') {
+      fieldVal = b.location;
+    }
+    if (key == 'volt' || key == 'voltage') {
+      fieldVal = b.voltage;
+    }
+    if (key == 'chem' || key == 'chemistry') {
+      fieldVal = b.chemistry;
+    }
 
     if (fieldVal != null) {
       return _matchString(fieldVal, valStr, isLiteral: isLiteral);
@@ -126,22 +155,42 @@ class SearchQueryParser {
 
   static bool _compareInt(int actual, String op, int target) {
     switch (op) {
-      case '>': return actual > target;
-      case '<': return actual < target;
-      case '>=': return actual >= target;
-      case '<=': return actual <= target;
-      default: return actual == target;
+      case '>':
+        return actual > target;
+      case '<':
+        return actual < target;
+      case '>=':
+        return actual >= target;
+      case '<=':
+        return actual <= target;
+      default:
+        return actual == target;
     }
   }
 
-  static bool _matchAnyField(Battery b, String pattern, {bool isLiteral = false}) {
+  static bool _matchAnyField(
+    Battery b,
+    String pattern, {
+    bool isLiteral = false,
+  }) {
     List<String> haystack = [
-      b.name, b.brand, b.model, b.type, b.location, b.notes, b.voltage, b.chemistry
+      b.name,
+      b.brand,
+      b.model,
+      b.type,
+      b.location,
+      b.notes,
+      b.voltage,
+      b.chemistry,
     ];
     return haystack.any((s) => _matchString(s, pattern, isLiteral: isLiteral));
   }
 
-  static bool _matchString(String text, String pattern, {bool isLiteral = false}) {
+  static bool _matchString(
+    String text,
+    String pattern, {
+    bool isLiteral = false,
+  }) {
     // Normalize both to remove diacritics
     text = removeDiacritics(text.toLowerCase());
     pattern = removeDiacritics(pattern.toLowerCase().replaceAll('_', ' '));
@@ -150,7 +199,7 @@ class SearchQueryParser {
       String regexPattern = pattern.split('*').map(RegExp.escape).join('.*');
       return RegExp(regexPattern).hasMatch(text);
     }
-    
+
     return text.contains(pattern);
   }
 }

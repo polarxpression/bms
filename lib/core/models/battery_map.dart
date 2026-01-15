@@ -14,9 +14,6 @@ class BatteryMap {
   }
 
   Map<String, dynamic> toMap() {
-    return {
-      'name': name,
-      'purpose': purpose,
-    };
+    return {'name': name, 'purpose': purpose};
   }
 }

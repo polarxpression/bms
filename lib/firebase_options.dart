@@ -79,7 +79,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '577036011593',
     projectId: 'batterybuddy-3fe86',
     storageBucket: 'batterybuddy-3fe86.firebasestorage.app',
-    iosClientId: '577036011593-sqm1g5o74lm0j9ln43ttj28qfphvf7qj.apps.googleusercontent.com',
+    iosClientId:
+        '577036011593-sqm1g5o74lm0j9ln43ttj28qfphvf7qj.apps.googleusercontent.com',
     iosBundleId: 'com.example.batteryBuddyFlutter',
   );
 
@@ -89,7 +90,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '577036011593',
     projectId: 'batterybuddy-3fe86',
     storageBucket: 'batterybuddy-3fe86.firebasestorage.app',
-    iosClientId: '577036011593-sqm1g5o74lm0j9ln43ttj28qfphvf7qj.apps.googleusercontent.com',
+    iosClientId:
+        '577036011593-sqm1g5o74lm0j9ln43ttj28qfphvf7qj.apps.googleusercontent.com',
     iosBundleId: 'com.example.batteryBuddyFlutter',
   );
 
@@ -102,5 +104,4 @@ class DefaultFirebaseOptions {
     storageBucket: 'batterybuddy-3fe86.firebasestorage.app',
     measurementId: 'G-C6RSXKWE00',
   );
-
 }

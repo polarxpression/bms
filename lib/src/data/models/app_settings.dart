@@ -14,7 +14,8 @@ class AppSettings {
   factory AppSettings.fromJson(Map<String, dynamic> json) {
     return AppSettings(
       gondolaCapacity: json['gondolaCapacity'] as int? ?? 20,
-      showDiscontinuedBatteries: json['showDiscontinuedBatteries'] as bool? ?? false,
+      showDiscontinuedBatteries:
+          json['showDiscontinuedBatteries'] as bool? ?? false,
     );
   }
 

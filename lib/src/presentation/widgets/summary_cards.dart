@@ -11,8 +11,10 @@ class SummaryCards extends StatelessWidget {
   Widget build(BuildContext context) {
     // Calculate the statistics from the list of batteries.
     // Using fold for safe summation of num types.
-    final totalQuantity =
-        batteries.fold<num>(0, (sum, item) => sum + item.quantity);
+    final totalQuantity = batteries.fold<num>(
+      0,
+      (sum, item) => sum + item.quantity,
+    );
     final gondolaQuantity = batteries
         .where((b) => b.location == BatteryLocation.gondola)
         .fold<num>(0, (sum, item) => sum + item.quantity);
@@ -43,15 +45,13 @@ class SummaryCards extends StatelessWidget {
           padding: const EdgeInsets.all(12.0),
           child: Column(
             children: [
-              Text(
-                title,
-                style: theme.textTheme.bodyLarge,
-              ),
+              Text(title, style: theme.textTheme.bodyLarge),
               const SizedBox(height: 4),
               Text(
                 value,
-                style: theme.textTheme.headlineMedium
-                    ?.copyWith(fontWeight: FontWeight.bold),
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ],
           ),

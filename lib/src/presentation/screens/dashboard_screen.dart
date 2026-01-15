@@ -25,22 +25,41 @@ class DashboardScreen extends ConsumerWidget {
     }
 
     final List<String> header = [
-      'ID', 'Model', 'Brand', 'Type', 'Quantity', 'Pack Size', 'Barcode',
-      'Discontinued', 'Location', 'Gondola Capacity', 'Gondola Name', 'Image URL',
-      'Created At', 'Updated At', 'Last Used'
+      'ID',
+      'Model',
+      'Brand',
+      'Type',
+      'Quantity',
+      'Pack Size',
+      'Barcode',
+      'Discontinued',
+      'Location',
+      'Gondola Capacity',
+      'Gondola Name',
+      'Image URL',
+      'Created At',
+      'Updated At',
+      'Last Used',
     ];
     final List<List<dynamic>> rows = [header];
 
     for (final battery in batteries) {
       rows.add([
-        battery.id, battery.model, battery.brand, battery.type ?? '',
-        battery.quantity, battery.packSize, battery.barcode,
+        battery.id,
+        battery.model,
+        battery.brand,
+        battery.type ?? '',
+        battery.quantity,
+        battery.packSize,
+        battery.barcode,
         battery.discontinued ?? false,
         battery.location != null ? battery.location!.name : '',
-        battery.gondolaCapacity ?? '', battery.gondolaName ?? '',
-        battery.imageUrl ?? '', battery.createdAt?.toIso8601String() ?? '',
+        battery.gondolaCapacity ?? '',
+        battery.gondolaName ?? '',
+        battery.imageUrl ?? '',
+        battery.createdAt?.toIso8601String() ?? '',
         battery.updatedAt?.toIso8601String() ?? '',
-        battery.lastUsed?.toIso8601String() ?? ''
+        battery.lastUsed?.toIso8601String() ?? '',
       ]);
     }
 
@@ -62,9 +81,9 @@ class DashboardScreen extends ConsumerWidget {
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error exporting file: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error exporting file: $e')));
       }
     }
   }
@@ -87,9 +106,7 @@ class DashboardScreen extends ConsumerWidget {
             icon: const Icon(Icons.settings),
             onPressed: () {
               Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const SettingsScreen(),
-                ),
+                MaterialPageRoute(builder: (context) => const SettingsScreen()),
               );
             },
           ),
@@ -97,9 +114,8 @@ class DashboardScreen extends ConsumerWidget {
       ),
       body: batteriesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stackTrace) => Center(
-          child: Text('An error occurred: $error'),
-        ),
+        error: (error, stackTrace) =>
+            Center(child: Text('An error occurred: $error')),
         data: (batteries) {
           final debugInfo = ref.watch(debugStockInfoProvider);
           return Column(
@@ -111,7 +127,13 @@ class DashboardScreen extends ConsumerWidget {
                 margin: const EdgeInsets.all(8.0),
                 child: Padding(
                   padding: const EdgeInsets.all(8.0),
-                  child: Text(debugInfo, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                  child: Text(
+                    debugInfo,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
                 ),
               ),
               SummaryCards(batteries: batteries),
@@ -120,20 +142,30 @@ class DashboardScreen extends ConsumerWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 8.0),
                   child: ExpansionTile(
                     title: Text(
-                        'Internal Restock Suggestions (${itemsToRestock.length})'),
-                    children: itemsToRestock.map((b) => BatteryListItem(
-                      battery: b,
-                      onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                        builder: (c) => AddEditBatteryScreen(battery: b),
-                      )),
-                    )).toList(),
+                      'Internal Restock Suggestions (${itemsToRestock.length})',
+                    ),
+                    children: itemsToRestock
+                        .map(
+                          (b) => BatteryListItem(
+                            battery: b,
+                            onTap: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (c) =>
+                                    AddEditBatteryScreen(battery: b),
+                              ),
+                            ),
+                          ),
+                        )
+                        .toList(),
                   ),
                 ),
               const Divider(height: 1),
               Padding(
                 padding: const EdgeInsets.all(16.0),
-                child: Text('Full Inventory',
-                    style: Theme.of(context).textTheme.titleLarge),
+                child: Text(
+                  'Full Inventory',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
               ),
               Expanded(
                 child: ListView.builder(
@@ -143,9 +175,12 @@ class DashboardScreen extends ConsumerWidget {
                     final battery = batteries[index];
                     return BatteryListItem(
                       battery: battery,
-                      onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                        builder: (c) => AddEditBatteryScreen(battery: battery),
-                      )),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (c) =>
+                              AddEditBatteryScreen(battery: battery),
+                        ),
+                      ),
                     );
                   },
                 ),
@@ -155,9 +190,9 @@ class DashboardScreen extends ConsumerWidget {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => Navigator.of(context).push(MaterialPageRoute(
-          builder: (c) => const AddEditBatteryScreen(),
-        )),
+        onPressed: () => Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (c) => const AddEditBatteryScreen())),
         tooltip: 'Add Battery',
         child: const Icon(Icons.add),
       ),

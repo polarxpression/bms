@@ -6,9 +6,7 @@ import 'package:bms/ui/main_layout.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const BatteryBuddyApp());
 }
 
@@ -29,6 +27,8 @@ class BatteryBuddyApp extends StatelessWidget {
         themeMode: ThemeMode.dark,
         darkTheme: ThemeData(
           useMaterial3: true,
+          visualDensity:
+              VisualDensity.compact, // Tighter layout for desktop/pro feel
           brightness: Brightness.dark,
           scaffoldBackgroundColor: bgColor,
           colorScheme: ColorScheme.fromSeed(
@@ -37,17 +37,29 @@ class BatteryBuddyApp extends StatelessWidget {
             brightness: Brightness.dark,
             surface: surfaceColor,
           ),
+          textTheme: const TextTheme(
+            displayLarge: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+            titleLarge: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            bodyLarge: TextStyle(fontSize: 14),
+            bodyMedium: TextStyle(fontSize: 13),
+          ),
           appBarTheme: const AppBarTheme(
             backgroundColor: bgColor,
             elevation: 0,
             centerTitle: false,
-            titleTextStyle: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+            titleTextStyle: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
           ),
           navigationBarTheme: NavigationBarThemeData(
             backgroundColor: const Color(0xFF27272A),
-            indicatorColor: accentPink.withOpacity(0.2),
+            indicatorColor: accentPink.withValues(alpha: 0.2),
             iconTheme: WidgetStateProperty.resolveWith((states) {
-              if (states.contains(WidgetState.selected)) return const IconThemeData(color: accentPink);
+              if (states.contains(WidgetState.selected)) {
+                return const IconThemeData(color: accentPink);
+              }
               return const IconThemeData(color: Colors.grey);
             }),
           ),
@@ -61,8 +73,14 @@ class BatteryBuddyApp extends StatelessWidget {
           inputDecorationTheme: InputDecorationTheme(
             filled: true,
             fillColor: surfaceColor,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: accentPink)),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: accentPink),
+            ),
             labelStyle: const TextStyle(color: Colors.white70),
           ),
         ),

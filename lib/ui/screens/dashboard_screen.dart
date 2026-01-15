@@ -27,7 +27,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     // Apply filter
     if (_filterQuery.isNotEmpty) {
-      lowStock = lowStock.where((b) => SearchQueryParser.matches(b, _filterQuery)).toList();
+      lowStock = lowStock
+          .where((b) => SearchQueryParser.matches(b, _filterQuery))
+          .toList();
     }
 
     const Color accentPink = Color(0xFFEC4899);
@@ -39,7 +41,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       body: LayoutBuilder(
         builder: (context, constraints) {
           final isWide = constraints.maxWidth > 900;
-          
+
           return RefreshIndicator(
             onRefresh: () => state.refreshData(),
             displacement: 20,
@@ -54,78 +56,128 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     delegate: SliverChildListDelegate([
                       Row(
                         children: [
-                          _statBox('Total em Estoque', '${state.totalBatteries}', accentPink, cardColor),
+                          _statBox(
+                            'Total em Estoque',
+                            '${state.totalBatteries}',
+                            accentPink,
+                            cardColor,
+                          ),
                           const SizedBox(width: 12),
-                          _statBox('Sugestões', '${state.lowStockBatteries.length}', Colors.orangeAccent, cardColor),
+                          _statBox(
+                            'Sugestões',
+                            '${state.lowStockBatteries.length}',
+                            Colors.orangeAccent,
+                            cardColor,
+                          ),
                         ],
                       ),
                       const SizedBox(height: 28),
-                      
+
                       // Filter Field
                       TextField(
                         controller: _searchController,
                         onChanged: (v) => setState(() => _filterQuery = v),
                         decoration: InputDecoration(
                           hintText: 'Filtrar sugestões...',
-                          prefixIcon: const Icon(Icons.search, color: Color(0xFFEC4899)),
-                          suffixIcon: _filterQuery.isNotEmpty ? IconButton(
-                            icon: const Icon(Icons.clear, color: Colors.grey),
-                            onPressed: () {
-                              setState(() => _filterQuery = '');
-                              _searchController.clear();
-                            },
-                          ) : null,
+                          prefixIcon: const Icon(
+                            Icons.search,
+                            color: Color(0xFFEC4899),
+                          ),
+                          suffixIcon: _filterQuery.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(
+                                    Icons.clear,
+                                    color: Colors.grey,
+                                  ),
+                                  onPressed: () {
+                                    setState(() => _filterQuery = '');
+                                    _searchController.clear();
+                                  },
+                                )
+                              : null,
                           filled: true,
                           fillColor: surfaceColor,
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFEC4899), width: 1)),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                              color: Color(0xFFEC4899),
+                              width: 1,
+                            ),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 16),
 
-                      if (lowStock.isNotEmpty || (state.lowStockBatteries.isNotEmpty && _filterQuery.isNotEmpty)) ...[
+                      if (lowStock.isNotEmpty ||
+                          (state.lowStockBatteries.isNotEmpty &&
+                              _filterQuery.isNotEmpty)) ...[
                         const Padding(
                           padding: EdgeInsets.only(left: 4, bottom: 12),
-                          child: Text('Reposição Sugerida', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                          child: Text(
+                            'Reposição Sugerida',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
-                      ]
+                      ],
                     ]),
                   ),
                 ),
-                
-                if (lowStock.isEmpty && (state.lowStockBatteries.isEmpty || _filterQuery.isEmpty))
-                  SliverFillRemaining(
+
+                if (lowStock.isEmpty &&
+                    (state.lowStockBatteries.isEmpty || _filterQuery.isEmpty))
+                  const SliverFillRemaining(
                     hasScrollBody: false,
                     child: Center(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
-                        children: const [
-                          Icon(Icons.check_circle_outline, size: 48, color: Colors.green),
+                        children: [
+                          Icon(
+                            Icons.check_circle_outline,
+                            size: 48,
+                            color: Colors.green,
+                          ),
                           SizedBox(height: 12),
-                          Text('Nenhuma reposição necessária', style: TextStyle(color: Colors.grey)),
+                          Text(
+                            'Nenhuma reposição necessária',
+                            style: TextStyle(color: Colors.grey),
+                          ),
                         ],
                       ),
                     ),
                   )
                 else if (lowStock.isEmpty && _filterQuery.isNotEmpty)
-                  SliverFillRemaining(
+                  const SliverFillRemaining(
                     hasScrollBody: false,
-                    child: const Center(
-                      child: Text('Nenhum item encontrado para o filtro.', style: TextStyle(color: Colors.grey)),
+                    child: Center(
+                      child: Text(
+                        'Nenhum item encontrado para o filtro.',
+                        style: TextStyle(color: Colors.grey),
+                      ),
                     ),
                   )
                 else if (isWide)
                   SliverPadding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     sliver: SliverGrid(
-                      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                        maxCrossAxisExtent: 400,
-                        mainAxisExtent: 140, // Fixed height for consistency
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                      ),
+                      gridDelegate:
+                          const SliverGridDelegateWithMaxCrossAxisExtent(
+                            maxCrossAxisExtent: 350, // Reduced from 400
+                            mainAxisExtent: 120, // Reduced from 140
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                          ),
                       delegate: SliverChildBuilderDelegate(
-                        (ctx, index) => _RestockItem(battery: lowStock[index], cardColor: cardColor),
+                        (ctx, index) => _RestockItem(
+                          battery: lowStock[index],
+                          cardColor: cardColor,
+                        ),
                         childCount: lowStock.length,
                       ),
                     ),
@@ -135,12 +187,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     sliver: SliverList(
                       delegate: SliverChildBuilderDelegate(
-                        (ctx, index) => _RestockItem(battery: lowStock[index], cardColor: cardColor),
+                        (ctx, index) => _RestockItem(
+                          battery: lowStock[index],
+                          cardColor: cardColor,
+                        ),
                         childCount: lowStock.length,
                       ),
                     ),
                   ),
-                  
+
                 // Bottom padding
                 const SliverToBoxAdapter(child: SizedBox(height: 20)),
               ],
@@ -154,18 +209,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _statBox(String label, String val, Color textColor, Color bgColor) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12), // Reduced padding
         decoration: BoxDecoration(
-          color: bgColor, 
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: textColor.withOpacity(0.3))
+          color: bgColor,
+          borderRadius: BorderRadius.circular(12), // Slightly smaller radius
+          border: Border.all(color: textColor.withValues(alpha: 0.3)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 12)),
-            const SizedBox(height: 4),
-            Text(val, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white)),
+            Text(
+              label,
+              style: TextStyle(
+                color: textColor,
+                fontWeight: FontWeight.bold,
+                fontSize: 11,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              val,
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ), // Reduced font size
           ],
         ),
       ),
@@ -181,74 +250,103 @@ class _RestockItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final state = AppStateProvider.of(context);
-    
+
     // Effective Limit
-    final int limit = battery.gondolaLimit > 0 ? battery.gondolaLimit : state.defaultGondolaCapacity;
-    
+    final int limit = battery.gondolaLimit > 0
+        ? battery.gondolaLimit
+        : state.defaultGondolaCapacity;
+
     // How many does the shelf need?
     final int needed = (limit - battery.gondolaQuantity).clamp(0, 9999);
-    
+
     // How many can we actually give?
     final int canMove = needed > battery.quantity ? battery.quantity : needed;
-    
+
     final bool isOutOfStock = battery.quantity == 0;
 
     return Card(
       color: cardColor,
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 8), // Reduced margin
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        dense: true, // Compact mode
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 4,
+        ), // Reduced padding
         leading: Container(
-          width: 44, height: 44,
+          width: 36,
+          height: 36, // Smaller icon container
           decoration: BoxDecoration(
-            color: isOutOfStock ? Colors.red.withOpacity(0.1) : Colors.white10, 
-            borderRadius: BorderRadius.circular(8)
+            color: isOutOfStock
+                ? Colors.red.withValues(alpha: 0.1)
+                : Colors.white10,
+            borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(
-            isOutOfStock ? Icons.production_quantity_limits : Icons.battery_alert, 
-            color: isOutOfStock ? Colors.red : const Color(0xFFEC4899)
+            isOutOfStock
+                ? Icons.production_quantity_limits
+                : Icons.battery_alert,
+            color: isOutOfStock ? Colors.red : const Color(0xFFEC4899),
+            size: 20, // Smaller icon
           ),
         ),
-        title: Text(battery.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(
+          battery.name,
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+        ), // Refined text
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('${battery.type} • Pack x${battery.packSize} • ${battery.location.isNotEmpty ? battery.location : "Sem Local"}'),
-            const SizedBox(height: 4),
+            Text(
+              '${battery.type} • Pack x${battery.packSize} • ${battery.location.isNotEmpty ? battery.location : "Sem Local"}',
+              style: const TextStyle(fontSize: 11),
+            ),
+            const SizedBox(height: 2),
             Row(
               children: [
-                Text('Gôndola: ${battery.gondolaQuantity}/$limit', 
-                     style: const TextStyle(fontSize: 12, color: Colors.white70)),
+                Text(
+                  'Gôndola: ${battery.gondolaQuantity}/$limit',
+                  style: const TextStyle(fontSize: 11, color: Colors.white70),
+                ),
                 const SizedBox(width: 8),
-                Text('Estoque: ${battery.quantity}', 
-                     style: TextStyle(fontSize: 12, color: isOutOfStock ? Colors.redAccent : Colors.white70)),
+                Text(
+                  'Estoque: ${battery.quantity}',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: isOutOfStock ? Colors.redAccent : Colors.white70,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 6),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: isOutOfStock ? Colors.red.withOpacity(0.2) : const Color(0xFFEC4899).withOpacity(0.2),
+                color: isOutOfStock
+                    ? Colors.red.withValues(alpha: 0.2)
+                    : const Color(0xFFEC4899).withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
                 'Repor: $canMove',
                 style: TextStyle(
-                  fontSize: 11, 
-                  color: isOutOfStock ? Colors.redAccent : const Color(0xFFEC4899), 
-                  fontWeight: FontWeight.bold
+                  fontSize: 11,
+                  color: isOutOfStock
+                      ? Colors.redAccent
+                      : const Color(0xFFEC4899),
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ),
           ],
         ),
         trailing: IconButton.filledTonal(
-          onPressed: canMove > 0 
-              ? () => state.moveToGondola(battery, canMove) 
+          onPressed: canMove > 0
+              ? () => state.moveToGondola(battery, canMove)
               : null,
           style: IconButton.styleFrom(
-            backgroundColor: const Color(0xFFEC4899).withOpacity(0.1),
+            backgroundColor: const Color(0xFFEC4899).withValues(alpha: 0.1),
             foregroundColor: const Color(0xFFEC4899),
             disabledBackgroundColor: Colors.white10,
             disabledForegroundColor: Colors.grey,

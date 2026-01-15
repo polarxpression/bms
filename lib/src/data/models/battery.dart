@@ -110,7 +110,7 @@ class Battery {
       'packSize': packSize,
       'barcode': barcode,
       'discontinued': discontinued,
-      'location': location != null ? describeEnum(location!) : null,
+      'location': location?.name,
       'imageUrl': imageUrl,
       'createdAt': createdAt != null ? Timestamp.fromDate(createdAt!) : null,
       'updatedAt': updatedAt != null ? Timestamp.fromDate(updatedAt!) : null,

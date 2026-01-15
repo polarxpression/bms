@@ -8,7 +8,10 @@ class SettingsScreen extends ConsumerWidget {
 
   /// Shows a dialog to edit the gondola capacity.
   void _showEditGondolaCapacityDialog(
-      BuildContext context, WidgetRef ref, int currentCapacity) {
+    BuildContext context,
+    WidgetRef ref,
+    int currentCapacity,
+  ) {
     final controller = TextEditingController(text: currentCapacity.toString());
     showDialog(
       context: context,
@@ -50,9 +53,7 @@ class SettingsScreen extends ConsumerWidget {
     final settings = ref.watch(appSettingsProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-      ),
+      appBar: AppBar(title: const Text('Settings')),
       body: settings.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => Center(child: Text('Error: $error')),
@@ -61,8 +62,9 @@ class SettingsScreen extends ConsumerWidget {
             children: [
               SwitchListTile(
                 title: const Text('Show Discontinued Batteries'),
-                subtitle:
-                    const Text('If enabled, discontinued items will appear in lists.'),
+                subtitle: const Text(
+                  'If enabled, discontinued items will appear in lists.',
+                ),
                 value: appSettings.showDiscontinuedBatteries,
                 onChanged: (newValue) {
                   ref
@@ -73,14 +75,18 @@ class SettingsScreen extends ConsumerWidget {
               const Divider(),
               ListTile(
                 title: const Text('Default Gondola Capacity'),
-                subtitle: Text(
-                    'Default max quantity for items in the "gondola" location.'),
+                subtitle: const Text(
+                  'Default max quantity for items in the "gondola" location.',
+                ),
                 trailing: Text(
                   '${appSettings.gondolaCapacity}',
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 onTap: () => _showEditGondolaCapacityDialog(
-                    context, ref, appSettings.gondolaCapacity),
+                  context,
+                  ref,
+                  appSettings.gondolaCapacity,
+                ),
               ),
               const Divider(),
             ],

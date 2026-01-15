@@ -14,7 +14,8 @@ class AddEditBatteryScreen extends ConsumerStatefulWidget {
   const AddEditBatteryScreen({super.key, this.battery});
 
   @override
-  ConsumerState<AddEditBatteryScreen> createState() => _AddEditBatteryScreenState();
+  ConsumerState<AddEditBatteryScreen> createState() =>
+      _AddEditBatteryScreenState();
 }
 
 class _AddEditBatteryScreenState extends ConsumerState<AddEditBatteryScreen> {
@@ -35,10 +36,12 @@ class _AddEditBatteryScreenState extends ConsumerState<AddEditBatteryScreen> {
     _modelController = TextEditingController(text: widget.battery?.model);
     _brandController = TextEditingController(text: widget.battery?.brand);
     _barcodeController = TextEditingController(text: widget.battery?.barcode);
-    _quantityController =
-        TextEditingController(text: widget.battery?.quantity.toString());
-    _packSizeController =
-        TextEditingController(text: widget.battery?.packSize.toString());
+    _quantityController = TextEditingController(
+      text: widget.battery?.quantity.toString(),
+    );
+    _packSizeController = TextEditingController(
+      text: widget.battery?.packSize.toString(),
+    );
     _location = widget.battery?.location ?? BatteryLocation.stock;
   }
 
@@ -83,9 +86,9 @@ class _AddEditBatteryScreenState extends ConsumerState<AddEditBatteryScreen> {
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error saving battery: $e')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error saving battery: $e')));
         }
       }
     }
@@ -97,10 +100,7 @@ class _AddEditBatteryScreenState extends ConsumerState<AddEditBatteryScreen> {
       appBar: AppBar(
         title: Text(_isEditMode ? 'Edit Battery' : 'Add Battery'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.save),
-            onPressed: _saveForm,
-          ),
+          IconButton(icon: const Icon(Icons.save), onPressed: _saveForm),
         ],
       ),
       body: SingleChildScrollView(
@@ -149,9 +149,13 @@ class _AddEditBatteryScreenState extends ConsumerState<AddEditBatteryScreen> {
               SegmentedButton<BatteryLocation>(
                 segments: const [
                   ButtonSegment(
-                      value: BatteryLocation.gondola, label: Text('Gondola')),
+                    value: BatteryLocation.gondola,
+                    label: Text('Gondola'),
+                  ),
                   ButtonSegment(
-                      value: BatteryLocation.stock, label: Text('Stock')),
+                    value: BatteryLocation.stock,
+                    label: Text('Stock'),
+                  ),
                 ],
                 selected: {_location},
                 onSelectionChanged: (newSelection) {

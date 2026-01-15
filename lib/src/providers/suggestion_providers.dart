@@ -7,11 +7,15 @@ import 'package:bms/src/providers/app_settings_provider.dart';
 final debugStockInfoProvider = Provider<String>((ref) {
   final batteriesAsync = ref.watch(batteriesStreamProvider);
   final batteries = batteriesAsync.value ?? [];
-  
-  final gondola = batteries.where((b) => b.location == BatteryLocation.gondola).length;
-  final stock = batteries.where((b) => b.location == BatteryLocation.stock).length;
+
+  final gondola = batteries
+      .where((b) => b.location == BatteryLocation.gondola)
+      .length;
+  final stock = batteries
+      .where((b) => b.location == BatteryLocation.stock)
+      .length;
   final unknown = batteries.where((b) => b.location == null).length;
-  
+
   final stockBarcodes = batteries
       .where((b) => b.location == BatteryLocation.stock && b.quantity > 0)
       .map((b) => b.barcode.trim())
@@ -32,20 +36,25 @@ final internalRestockProvider = Provider<List<Battery>>((ref) {
 
   debugPrint('DEBUG: Total batteries fetched: ${batteries.length}');
 
-  final gondolaBatteries =
-      batteries.where((b) => b.location == BatteryLocation.gondola).toList();
+  final gondolaBatteries = batteries
+      .where((b) => b.location == BatteryLocation.gondola)
+      .toList();
   // Assuming anything NOT gondola is potential stock, or explicitly check for stock.
   // Note: Current logic only takes explicit BatteryLocation.stock.
   // If "Estoque" items have null location, they might be missed here.
-  final stockBatteries =
-      batteries.where((b) => b.location == BatteryLocation.stock).toList();
-  
-  final unknownLocationBatteries = 
-      batteries.where((b) => b.location == null).toList();
+  final stockBatteries = batteries
+      .where((b) => b.location == BatteryLocation.stock)
+      .toList();
+
+  final unknownLocationBatteries = batteries
+      .where((b) => b.location == null)
+      .toList();
 
   debugPrint('DEBUG: Gondola items: ${gondolaBatteries.length}');
   debugPrint('DEBUG: Stock items (explicit): ${stockBatteries.length}');
-  debugPrint('DEBUG: Unknown location items: ${unknownLocationBatteries.length}');
+  debugPrint(
+    'DEBUG: Unknown location items: ${unknownLocationBatteries.length}',
+  );
 
   // Create a set of barcodes for items currently in stock with quantity > 0
   final stockBarcodes = stockBatteries
@@ -70,14 +79,18 @@ final internalRestockProvider = Provider<List<Battery>>((ref) {
       final barcode = battery.barcode.trim();
       // Check if available in stock by barcode
       if (barcode.isNotEmpty && stockBarcodes.contains(barcode)) {
-        debugPrint('DEBUG: SUGGESTION FOUND -> ${battery.brand} ${battery.model} (Barcode: $barcode) [Gondola Qty: ${battery.quantity}, Limit: $limit]');
+        debugPrint(
+          'DEBUG: SUGGESTION FOUND -> ${battery.brand} ${battery.model} (Barcode: $barcode) [Gondola Qty: ${battery.quantity}, Limit: $limit]',
+        );
         itemsToRestock.add(battery);
       } else {
-        debugPrint('DEBUG: Needs restock but NO STOCK -> ${battery.brand} ${battery.model} (Barcode: $barcode) [Gondola Qty: ${battery.quantity}, Limit: $limit]');
+        debugPrint(
+          'DEBUG: Needs restock but NO STOCK -> ${battery.brand} ${battery.model} (Barcode: $barcode) [Gondola Qty: ${battery.quantity}, Limit: $limit]',
+        );
       }
     }
   }
-  
+
   debugPrint('DEBUG: Total Suggestions returned: ${itemsToRestock.length}');
 
   return itemsToRestock;

@@ -14,7 +14,7 @@ class Battery {
   int minStockThreshold;
   DateTime purchaseDate;
   DateTime lastChanged;
-  
+
   String voltage;
   String chemistry;
   String notes;
@@ -22,7 +22,7 @@ class Battery {
   String location;
   int gondolaLimit;
   int packSize;
-  
+
   // NEW: Track gondola quantity separately from stock
   int gondolaQuantity;
   bool discontinued;
@@ -55,29 +55,37 @@ class Battery {
     String brand = data['brand'] ?? '';
     String model = data['model'] ?? '';
     String type = data['type'] ?? '';
-    
-    String defaultName = brand.isNotEmpty || model.isNotEmpty 
-        ? '$brand $model'.trim() 
+
+    String defaultName = brand.isNotEmpty || model.isNotEmpty
+        ? '$brand $model'.trim()
         : (type.isNotEmpty ? 'Pilha $type' : 'Item sem nome');
 
     String loc = data['location'] ?? '';
-    bool isGondolaLoc = loc.toLowerCase().contains('gondola') || loc.toLowerCase().contains('gôndola');
-    
+    bool isGondolaLoc =
+        loc.toLowerCase().contains('gondola') ||
+        loc.toLowerCase().contains('gôndola');
+
     int rawQty = data['quantity'] ?? 0;
     int rawGondolaQty = data['gondolaQuantity'] ?? 0;
-    
+
     // MIGRATION FIX: If gondolaQuantity is missing OR 0, but location is Gondola,
     // and we have a positive main quantity, map the main quantity to gondolaQuantity.
     // This handles legacy data where 'quantity' represented the shelf count.
-    if ((data['gondolaQuantity'] == null || rawGondolaQty == 0) && isGondolaLoc && rawQty > 0) {
+    if ((data['gondolaQuantity'] == null || rawGondolaQty == 0) &&
+        isGondolaLoc &&
+        rawQty > 0) {
       rawGondolaQty = rawQty;
       rawQty = 0;
     }
 
     return Battery(
       id: docId,
-      name: (data['name'] == null || data['name'].toString().isEmpty || data['name'] == 'Unknown' || data['name'] == 'Unnamed') 
-          ? defaultName 
+      name:
+          (data['name'] == null ||
+              data['name'].toString().isEmpty ||
+              data['name'] == 'Unknown' ||
+              data['name'] == 'Unnamed')
+          ? defaultName
           : data['name'],
       type: type.isEmpty ? 'AA' : type,
       brand: brand,
@@ -87,8 +95,10 @@ class Battery {
       quantity: rawQty,
       lowStockThreshold: data['lowStockThreshold'] ?? 2,
       minStockThreshold: data['minStockThreshold'] ?? 0,
-      purchaseDate: (data['purchaseDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      lastChanged: (data['lastChanged'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      purchaseDate:
+          (data['purchaseDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      lastChanged:
+          (data['lastChanged'] as Timestamp?)?.toDate() ?? DateTime.now(),
       voltage: data['voltage'] ?? '',
       chemistry: data['chemistry'] ?? '',
       notes: data['notes'] ?? '',
