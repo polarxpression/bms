@@ -1,0 +1,82 @@
+{
+  "project_info": {
+    "project_number": "577036011593",
+    "project_id": "batterybuddy-3fe86",
+    "storage_bucket": "batterybuddy-3fe86.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:577036011593:android:3ae6a5e0ed6219e73e1798",
+        "android_client_info": {
+          "package_name": "dev.is_a.polar.bms"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "577036011593-v3lai2u5ikbvv4h41qocm01e1ccg3a1i.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB2fXq8oSjwl5KjrX2hj4IZ-NYxWYHG2U8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "577036011593-v3lai2u5ikbvv4h41qocm01e1ccg3a1i.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "577036011593-bsnir6ja6t7k9h7bcif0octc1d7d2g4t.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "dev.is_a.polar.bms"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:577036011593:android:a4f15285648f9f973e1798",
+        "android_client_info": {
+          "package_name": "dev.is_a.polar.bms"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "577036011593-v3lai2u5ikbvv4h41qocm01e1ccg3a1i.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB2fXq8oSjwl5KjrX2hj4IZ-NYxWYHG2U8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "577036011593-v3lai2u5ikbvv4h41qocm01e1ccg3a1i.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "577036011593-bsnir6ja6t7k9h7bcif0octc1d7d2g4t.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "dev.is_a.polar.bms"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
