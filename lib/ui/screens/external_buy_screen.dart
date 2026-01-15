@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:bms/state/app_state.dart';
 import 'package:bms/core/utils/report_generator.dart';
+import 'package:bms/core/models/battery.dart';
 
 class ExternalBuyScreen extends StatefulWidget {
   const ExternalBuyScreen({super.key});
@@ -55,7 +56,7 @@ class _ExternalBuyScreenState extends State<ExternalBuyScreen> {
             icon: const Icon(Icons.print),
             onPressed: filteredList.isEmpty 
                 ? null 
-                : () => ReportGenerator.generateBuyReport(filteredList),
+                : () => _showReportDialog(context, filteredList),
           ),
         ],
       ),
@@ -177,6 +178,77 @@ class _ExternalBuyScreenState extends State<ExternalBuyScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showReportDialog(BuildContext context, List<Battery> sourceBatteries) {
+    final allTypes = sourceBatteries.map((b) => b.type).toSet().toList()..sort();
+    final selectedTypes = Set<String>.from(allTypes);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            backgroundColor: const Color(0xFF141414),
+            title: const Text('Configurar Relatório', style: TextStyle(color: Colors.white)),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Selecione os tipos para incluir:', style: TextStyle(color: Colors.white70)),
+                  const SizedBox(height: 12),
+                  Flexible(
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: allTypes.length,
+                      itemBuilder: (ctx, idx) {
+                        final type = allTypes[idx];
+                        final isSelected = selectedTypes.contains(type);
+                        return CheckboxListTile(
+                          title: Text(type, style: const TextStyle(color: Colors.white)),
+                          value: isSelected,
+                          activeColor: Colors.blueAccent,
+                          checkColor: Colors.white,
+                          side: const BorderSide(color: Colors.white54),
+                          onChanged: (val) {
+                            setState(() {
+                              if (val == true) {
+                                selectedTypes.add(type);
+                              } else {
+                                selectedTypes.remove(type);
+                              }
+                            });
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+              FilledButton(
+                onPressed: () {
+                  final finalBatteries = sourceBatteries.where((b) => selectedTypes.contains(b.type)).toList();
+                  if (finalBatteries.isNotEmpty) {
+                    ReportGenerator.generateBuyReport(finalBatteries);
+                    Navigator.pop(ctx);
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Selecione pelo menos um tipo.'))
+                    );
+                  }
+                }, 
+                child: const Text('Gerar PDF')
+              ),
+            ],
+          );
+        },
       ),
     );
   }
