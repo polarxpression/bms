@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:bms/state/app_state.dart';
-import 'package:intl/intl.dart';
-import 'package:file_saver/file_saver.dart';
+import 'package:bms/core/utils/report_generator.dart';
 
 class ExternalBuyScreen extends StatefulWidget {
   const ExternalBuyScreen({super.key});

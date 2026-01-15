@@ -2,10 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:bms/core/models/battery.dart';
 import 'package:bms/state/app_state.dart';
 import 'package:bms/core/utils/search_query_parser.dart';
-import 'package:bms/ui/screens/battery_form_screen.dart'; // For onTap/Edit?
-// DashboardView uses 'AddEditBatteryScreen' or 'BatteryFormScreen'?
-// In main.dart it uses: navigator... builder: (c) => AddEditBatteryScreen(battery: b) -> Wait, in main.dart it says 'BatteryFormScreen'.
-// Let's check main.dart again. It uses 'BatteryFormScreen'.
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});

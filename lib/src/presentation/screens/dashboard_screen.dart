@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:csv/csv.dart';
 import 'package:file_saver/file_saver.dart';
-import 'package:bms/src/data/models/battery.dart';
 import 'package:bms/src/providers/battery_providers.dart';
 import 'package:bms/src/providers/suggestion_providers.dart';
 import 'package:bms/src/presentation/widgets/summary_cards.dart';
@@ -37,7 +36,7 @@ class DashboardScreen extends ConsumerWidget {
         battery.id, battery.model, battery.brand, battery.type ?? '',
         battery.quantity, battery.packSize, battery.barcode,
         battery.discontinued ?? false,
-        battery.location != null ? describeEnum(battery.location!) : '',
+        battery.location != null ? battery.location!.name : '',
         battery.gondolaCapacity ?? '', battery.gondolaName ?? '',
         battery.imageUrl ?? '', battery.createdAt?.toIso8601String() ?? '',
         battery.updatedAt?.toIso8601String() ?? '',
