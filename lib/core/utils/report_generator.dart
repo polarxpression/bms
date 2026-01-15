@@ -71,16 +71,9 @@ class ReportGenerator {
             pw.Padding(
               padding: const pw.EdgeInsets.all(5),
               child: b.barcode.isNotEmpty
-                  ? pw.Container(
-                      width: 120,
-                      height: 40,
-                      child: pw.BarcodeWidget(
-                        barcode: pw.Barcode.code128(),
-                        data: b.barcode,
-                        drawText: true,
-                        textStyle: const pw.TextStyle(fontSize: 7),
-                      ),
-                    )
+                  ? pw.Text(b.barcode,
+                      textAlign: pw.TextAlign.center,
+                      style: const pw.TextStyle(fontSize: 10))
                   : pw.Text('-', textAlign: pw.TextAlign.center),
             ),
           ],

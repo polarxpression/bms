@@ -36,74 +36,117 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Visão Geral')),
-      body: RefreshIndicator(
-        onRefresh: () => state.refreshData(),
-        displacement: 20,
-        color: accentPink,
-        backgroundColor: cardColor,
-        child: ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16),
-          children: [
-            Row(
-              children: [
-                _statBox('Total em Estoque', '${state.totalBatteries}', accentPink, cardColor),
-                const SizedBox(width: 12),
-                _statBox('Sugestões', '${state.lowStockBatteries.length}', Colors.orangeAccent, cardColor),
-              ],
-            ),
-            const SizedBox(height: 28),
-            
-            // Filter Field
-            TextField(
-              controller: _searchController,
-              onChanged: (v) => setState(() => _filterQuery = v),
-              decoration: InputDecoration(
-                hintText: 'Filtrar sugestões...',
-                prefixIcon: const Icon(Icons.search, color: Color(0xFFEC4899)),
-                suffixIcon: _filterQuery.isNotEmpty ? IconButton(
-                  icon: const Icon(Icons.clear, color: Colors.grey),
-                  onPressed: () {
-                    setState(() => _filterQuery = '');
-                    _searchController.clear();
-                  },
-                ) : null,
-                filled: true,
-                fillColor: surfaceColor,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFEC4899), width: 1)),
-              ),
-            ),
-            const SizedBox(height: 16),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final isWide = constraints.maxWidth > 900;
+          
+          return RefreshIndicator(
+            onRefresh: () => state.refreshData(),
+            displacement: 20,
+            color: accentPink,
+            backgroundColor: cardColor,
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                SliverPadding(
+                  padding: const EdgeInsets.all(16),
+                  sliver: SliverList(
+                    delegate: SliverChildListDelegate([
+                      Row(
+                        children: [
+                          _statBox('Total em Estoque', '${state.totalBatteries}', accentPink, cardColor),
+                          const SizedBox(width: 12),
+                          _statBox('Sugestões', '${state.lowStockBatteries.length}', Colors.orangeAccent, cardColor),
+                        ],
+                      ),
+                      const SizedBox(height: 28),
+                      
+                      // Filter Field
+                      TextField(
+                        controller: _searchController,
+                        onChanged: (v) => setState(() => _filterQuery = v),
+                        decoration: InputDecoration(
+                          hintText: 'Filtrar sugestões...',
+                          prefixIcon: const Icon(Icons.search, color: Color(0xFFEC4899)),
+                          suffixIcon: _filterQuery.isNotEmpty ? IconButton(
+                            icon: const Icon(Icons.clear, color: Colors.grey),
+                            onPressed: () {
+                              setState(() => _filterQuery = '');
+                              _searchController.clear();
+                            },
+                          ) : null,
+                          filled: true,
+                          fillColor: surfaceColor,
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFEC4899), width: 1)),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
 
-            if (lowStock.isNotEmpty) ...[
-              const Padding(
-                padding: EdgeInsets.only(left: 4, bottom: 12),
-                child: Text('Reposição Sugerida', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              ),
-              ...lowStock.map((b) => _RestockItem(battery: b, cardColor: cardColor)),
-            ] else if (state.lowStockBatteries.isNotEmpty && _filterQuery.isNotEmpty)
-               const Center(
-                child: Padding(
-                  padding: EdgeInsets.only(top: 40),
-                  child: Text('Nenhum item encontrado para o filtro.', style: TextStyle(color: Colors.grey)),
-                ),
-              )
-            else
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.only(top: 40),
-                  child: Column(
-                    children: [
-                      Icon(Icons.check_circle_outline, size: 48, color: Colors.green),
-                      SizedBox(height: 12),
-                      Text('Nenhuma reposição necessária', style: TextStyle(color: Colors.grey)),
-                    ],
+                      if (lowStock.isNotEmpty || (state.lowStockBatteries.isNotEmpty && _filterQuery.isNotEmpty)) ...[
+                        const Padding(
+                          padding: EdgeInsets.only(left: 4, bottom: 12),
+                          child: Text('Reposição Sugerida', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                        ),
+                      ]
+                    ]),
                   ),
                 ),
-              ),
-          ],
-        ),
+                
+                if (lowStock.isEmpty && (state.lowStockBatteries.isEmpty || _filterQuery.isEmpty))
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: const [
+                          Icon(Icons.check_circle_outline, size: 48, color: Colors.green),
+                          SizedBox(height: 12),
+                          Text('Nenhuma reposição necessária', style: TextStyle(color: Colors.grey)),
+                        ],
+                      ),
+                    ),
+                  )
+                else if (lowStock.isEmpty && _filterQuery.isNotEmpty)
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: const Center(
+                      child: Text('Nenhum item encontrado para o filtro.', style: TextStyle(color: Colors.grey)),
+                    ),
+                  )
+                else if (isWide)
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    sliver: SliverGrid(
+                      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                        maxCrossAxisExtent: 400,
+                        mainAxisExtent: 140, // Fixed height for consistency
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                      ),
+                      delegate: SliverChildBuilderDelegate(
+                        (ctx, index) => _RestockItem(battery: lowStock[index], cardColor: cardColor),
+                        childCount: lowStock.length,
+                      ),
+                    ),
+                  )
+                else
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (ctx, index) => _RestockItem(battery: lowStock[index], cardColor: cardColor),
+                        childCount: lowStock.length,
+                      ),
+                    ),
+                  ),
+                  
+                // Bottom padding
+                const SliverToBoxAdapter(child: SizedBox(height: 20)),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
