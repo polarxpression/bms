@@ -61,6 +61,15 @@ flutter_launcher_icons:
   adaptive_icon_foreground: "assets/icons/bms_square.png"
   adaptive_icon_foreground_inset: 0
   remove_alpha_ios: true
+  web:
+    generate: true
+    image_path: "assets/icons/bms_square.png"
+    background_color: "#0175C2"
+    theme_color: "#0175C2"
+  windows:
+    generate: true
+    image_path: "assets/icons/bms_square.png"
+    icon_size: 256
 
 flutter:
   uses-material-design: true

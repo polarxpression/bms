@@ -29,25 +29,58 @@ class _MainLayoutShellState extends State<MainLayoutShell> {
     final state = AppStateProvider.of(context);
     if (state.isLoading) return const Scaffold(body: Center(child: CircularProgressIndicator()));
 
-    return Scaffold(
-      body: _pages[_currentIndex],
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: (idx) => setState(() => _currentIndex = idx),
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.dashboard_outlined), label: 'Painel'),
-          NavigationDestination(icon: Icon(Icons.shopping_cart_outlined), label: 'Comprar'), // NEW Tab
-          NavigationDestination(icon: Icon(Icons.map_outlined), label: 'Mapa'),
-          NavigationDestination(icon: Icon(Icons.inventory_2_outlined), label: 'Estoque'),
-          NavigationDestination(icon: Icon(Icons.settings_outlined), label: 'Ajustes'),
-        ],
-      ),
-      floatingActionButton: _currentIndex == 3 // Inventory is now index 3
-          ? FloatingActionButton(
-              onPressed: () => _showForm(context),
-              child: const Icon(Icons.add),
-            )
-          : null,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth > 800) {
+          return Scaffold(
+            body: Row(
+              children: [
+                NavigationRail(
+                  selectedIndex: _currentIndex,
+                  onDestinationSelected: (idx) => setState(() => _currentIndex = idx),
+                  labelType: NavigationRailLabelType.all,
+                  destinations: const [
+                    NavigationRailDestination(icon: Icon(Icons.dashboard_outlined), label: Text('Painel')),
+                    NavigationRailDestination(icon: Icon(Icons.shopping_cart_outlined), label: Text('Comprar')),
+                    NavigationRailDestination(icon: Icon(Icons.map_outlined), label: Text('Mapa')),
+                    NavigationRailDestination(icon: Icon(Icons.inventory_2_outlined), label: Text('Estoque')),
+                    NavigationRailDestination(icon: Icon(Icons.settings_outlined), label: Text('Ajustes')),
+                  ],
+                ),
+                const VerticalDivider(thickness: 1, width: 1),
+                Expanded(child: _pages[_currentIndex]),
+              ],
+            ),
+            floatingActionButton: _currentIndex == 3
+                ? FloatingActionButton(
+                    onPressed: () => _showForm(context),
+                    child: const Icon(Icons.add),
+                  )
+                : null,
+          );
+        } else {
+          return Scaffold(
+            body: _pages[_currentIndex],
+            bottomNavigationBar: NavigationBar(
+              selectedIndex: _currentIndex,
+              onDestinationSelected: (idx) => setState(() => _currentIndex = idx),
+              destinations: const [
+                NavigationDestination(icon: Icon(Icons.dashboard_outlined), label: 'Painel'),
+                NavigationDestination(icon: Icon(Icons.shopping_cart_outlined), label: 'Comprar'),
+                NavigationDestination(icon: Icon(Icons.map_outlined), label: 'Mapa'),
+                NavigationDestination(icon: Icon(Icons.inventory_2_outlined), label: 'Estoque'),
+                NavigationDestination(icon: Icon(Icons.settings_outlined), label: 'Ajustes'),
+              ],
+            ),
+            floatingActionButton: _currentIndex == 3 // Inventory is now index 3
+                ? FloatingActionButton(
+                    onPressed: () => _showForm(context),
+                    child: const Icon(Icons.add),
+                  )
+                : null,
+          );
+        }
+      },
     );
   }
 
