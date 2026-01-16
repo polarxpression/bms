@@ -497,6 +497,8 @@ class AppState extends ChangeNotifier {
 
     // Group items
     for (var b in _batteries) {
+      if (b.discontinued) continue;
+
       // Group by Barcode if present, otherwise Brand|Model
       String key;
       final bc = b.barcode.trim();

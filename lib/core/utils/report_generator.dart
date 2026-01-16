@@ -22,7 +22,6 @@ class ReportGenerator {
     // Header Row
     tableRows.add(
       pw.TableRow(
-        decoration: const pw.BoxDecoration(color: PdfColors.blueGrey800),
         children: [
           pw.Padding(
             padding: const pw.EdgeInsets.all(5),
@@ -30,7 +29,7 @@ class ReportGenerator {
               'Produto',
               style: pw.TextStyle(
                 fontWeight: pw.FontWeight.bold,
-                color: PdfColors.white,
+                fontSize: 12,
               ),
             ),
           ),
@@ -40,7 +39,7 @@ class ReportGenerator {
               'Qtd',
               style: pw.TextStyle(
                 fontWeight: pw.FontWeight.bold,
-                color: PdfColors.white,
+                fontSize: 12,
               ),
               textAlign: pw.TextAlign.center,
             ),
@@ -51,7 +50,7 @@ class ReportGenerator {
               'Cód. Barras',
               style: pw.TextStyle(
                 fontWeight: pw.FontWeight.bold,
-                color: PdfColors.white,
+                fontSize: 12,
               ),
               textAlign: pw.TextAlign.center,
             ),
@@ -81,9 +80,12 @@ class ReportGenerator {
                 children: [
                   pw.Text(
                     '${b.brand} ${b.model}',
-                    style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                    style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12),
                   ),
-                  pw.Text('Tipo: ${b.type} | Pack: ${b.packSize}'),
+                  pw.Text(
+                    'Tipo: ${b.type} | Pack: ${b.packSize}',
+                    style: const pw.TextStyle(fontSize: 10),
+                  ),
                 ],
               ),
             ),
@@ -94,7 +96,7 @@ class ReportGenerator {
                 textAlign: pw.TextAlign.center,
                 style: pw.TextStyle(
                   fontWeight: pw.FontWeight.bold,
-                  fontSize: 14,
+                  fontSize: 12,
                 ),
               ),
             ),
@@ -116,28 +118,47 @@ class ReportGenerator {
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.all(30),
+        margin: const pw.EdgeInsets.fromLTRB(
+          3.0 * PdfPageFormat.cm,
+          3.0 * PdfPageFormat.cm,
+          2.0 * PdfPageFormat.cm,
+          2.0 * PdfPageFormat.cm,
+        ),
+        header: (pw.Context context) {
+          return pw.Container(
+            alignment: pw.Alignment.centerRight,
+            margin: const pw.EdgeInsets.only(bottom: 10),
+            child: pw.Text(
+              'Página ${context.pageNumber}',
+              style: const pw.TextStyle(fontSize: 10),
+            ),
+          );
+        },
         build: (pw.Context context) {
           return [
-            pw.Header(
-              level: 0,
-              child: pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            pw.Center(
+              child: pw.Column(
                 children: [
                   pw.Text(
-                    'Relatório de Compras - Battery Buddy',
+                    'RELATÓRIO DE COMPRAS - BATTERY BUDDY',
                     style: pw.TextStyle(
-                      fontSize: 20,
+                      fontSize: 12,
                       fontWeight: pw.FontWeight.bold,
                     ),
+                    textAlign: pw.TextAlign.center,
                   ),
-                  pw.Text(dateStr, style: const pw.TextStyle(fontSize: 10)),
+                  pw.SizedBox(height: 10),
+                  pw.Text(
+                    'Data de emissão: $dateStr',
+                    style: const pw.TextStyle(fontSize: 12),
+                    textAlign: pw.TextAlign.center,
+                  ),
                 ],
               ),
             ),
             pw.SizedBox(height: 20),
             pw.Table(
-              border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
+              border: pw.TableBorder.all(color: PdfColors.black, width: 0.5),
               columnWidths: {
                 0: const pw.FlexColumnWidth(3),
                 1: const pw.FlexColumnWidth(1),
@@ -146,20 +167,22 @@ class ReportGenerator {
               children: tableRows,
             ),
             pw.SizedBox(height: 20),
-            pw.Divider(),
             pw.Row(
               mainAxisAlignment: pw.MainAxisAlignment.end,
               children: [
                 pw.Text(
                   'Total de Itens: $totalItems',
-                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                  style: pw.TextStyle(
+                    fontWeight: pw.FontWeight.bold,
+                    fontSize: 12,
+                  ),
                 ),
                 pw.SizedBox(width: 20),
                 pw.Text(
                   'Total a Comprar: $totalQtyToBuy',
                   style: pw.TextStyle(
                     fontWeight: pw.FontWeight.bold,
-                    fontSize: 16,
+                    fontSize: 12,
                   ),
                 ),
               ],

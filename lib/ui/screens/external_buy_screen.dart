@@ -241,6 +241,15 @@ class _ExternalBuyScreenState extends State<ExternalBuyScreen> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setState) {
+          // Filter types based on selected brands
+          final availableTypes =
+              sourceBatteries
+                  .where((b) => selectedBrands.contains(b.brand))
+                  .map((b) => b.type)
+                  .toSet()
+                  .toList()
+                ..sort();
+
           return DefaultTabController(
             length: 2,
             child: AlertDialog(
@@ -296,9 +305,38 @@ class _ExternalBuyScreenState extends State<ExternalBuyScreen> {
                           ),
                           // Types Tab
                           _buildSelectionList(
-                            items: allTypes,
+                            items: availableTypes,
                             selected: selectedTypes,
                             onChanged: (newSet) => setState(() {
+                              // Only update selection for currently available types
+                              // But we need to be careful not to lose selections of hidden types if that's desired behavior?
+                              // Usually in this UI pattern, we just update the set.
+                              // Since we are filtering the VIEW, interacting with the view should probably only affect visible items?
+                              // But the check logic in _buildSelectionList handles the set.
+                              // Let's just update the set.
+                              // However, _buildSelectionList's "Select All" uses 'items' (availableTypes).
+                              // So selecting all will only select available types.
+                              
+                              // We should probably clear types that are no longer available from selectedTypes?
+                              // Or just let them be. If they are not in availableTypes, they won't match the final filter anyway
+                              // (because the final filter requires brand match too).
+                              
+                              // We merge the changes.
+                              // Actually, _buildSelectionList returns a new Set based on 'selected'.
+                              // If we want to support independent selection, we just update.
+                              
+                              // Problem: _buildSelectionList's `onChanged` gives us a `newSet`.
+                              // If `_buildSelectionList` only knows about `items` (availableTypes),
+                              // it might return a set that only contains available types if "Select All" is clicked?
+                              // No, `_buildSelectionList` logic:
+                              // "Select All": returns Set.from(items).
+                              // "Unselect All": returns {}.
+                              // Single Item Toggle: returns (selected + item) or (selected - item).
+                              
+                              // If we use "Select All" on the Types tab, it will set selectedTypes to `availableTypes`.
+                              // This effectively deselects hidden types. This seems acceptable/correct.
+                              // If we toggle one item, `newSet` is derived from `selected` (which has everything) +/- item.
+                              
                               selectedTypes.clear();
                               selectedTypes.addAll(newSet);
                             }),
