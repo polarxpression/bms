@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:flutter/services.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -12,6 +14,18 @@ class ReportGenerator {
     final pdf = pw.Document();
     final now = DateTime.now();
     final dateStr = DateFormat('dd/MM/yyyy HH:mm').format(now);
+
+    // Fetch the logo SVG string
+    String? logoSvg;
+    try {
+      final ByteData data = await NetworkAssetBundle(
+        Uri.parse('https://polar.is-a.dev/images/logo-black.svg'),
+      ).load("");
+      logoSvg = utf8.decode(data.buffer.asUint8List());
+    } catch (e) {
+      // Fail silently or log if needed, logo will just be omitted
+      print('Error loading logo: $e');
+    }
 
     // Calculate totals
     int totalItems = 0;
@@ -80,7 +94,8 @@ class ReportGenerator {
                 children: [
                   pw.Text(
                     '${b.brand} ${b.model}',
-                    style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12),
+                    style: pw.TextStyle(
+                        fontWeight: pw.FontWeight.bold, fontSize: 12),
                   ),
                   pw.Text(
                     'Tipo: ${b.type} | Pack: ${b.packSize}',
@@ -134,13 +149,36 @@ class ReportGenerator {
             ),
           );
         },
+        footer: (pw.Context context) {
+          return pw.Container(
+            alignment: pw.Alignment.bottomRight,
+            margin: const pw.EdgeInsets.only(top: 20),
+            child: pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.end,
+              crossAxisAlignment: pw.CrossAxisAlignment.center,
+              children: [
+                pw.Text(
+                  'BMS',
+                  style: pw.TextStyle(
+                    fontWeight: pw.FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+                if (logoSvg != null) ...[
+                  pw.SizedBox(width: 8),
+                  pw.SvgImage(svg: logoSvg, height: 20),
+                ],
+              ],
+            ),
+          );
+        },
         build: (pw.Context context) {
           return [
             pw.Center(
               child: pw.Column(
                 children: [
                   pw.Text(
-                    'RELATÓRIO DE COMPRAS - BATTERY BUDDY',
+                    'RELATÓRIO DE COMPRAS - BMS',
                     style: pw.TextStyle(
                       fontSize: 12,
                       fontWeight: pw.FontWeight.bold,
@@ -194,7 +232,8 @@ class ReportGenerator {
 
     await Printing.layoutPdf(
       onLayout: (PdfPageFormat format) async => pdf.save(),
-      name: 'relatorio_compras_${DateFormat('yyyyMMdd_HHmm').format(now)}.pdf',
+      name:
+          'relatorio_compras_${DateFormat('yyyyMMdd_HHmm').format(now)}.pdf',
     );
   }
 }
