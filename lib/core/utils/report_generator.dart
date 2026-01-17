@@ -1,10 +1,13 @@
 import 'dart:convert';
+import 'dart:ui' as ui;
 import 'package:flutter/services.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:bms/core/models/battery.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:vector_graphics/vector_graphics.dart';
 
 class ReportGenerator {
   static Future<void> generateBuyReport(
@@ -15,13 +18,29 @@ class ReportGenerator {
     final now = DateTime.now();
     final dateStr = DateFormat('dd/MM/yyyy HH:mm').format(now);
 
-    // Fetch the logo SVG string
-    String? logoSvg;
+    // Fetch and rasterize logo
+    Uint8List? logoBytes;
     try {
-      final ByteData data = await NetworkAssetBundle(
-        Uri.parse('https://polar.is-a.dev/images/logo-black.svg'),
-      ).load("");
-      logoSvg = utf8.decode(data.buffer.asUint8List());
+      final String logoSvg = await rootBundle.loadString(
+        'assets/icons/logo-black.svg',
+      );
+      final PictureInfo pictureInfo = await vg.loadPicture(
+        SvgStringLoader(logoSvg),
+        null,
+      );
+
+      final ui.Picture picture = pictureInfo.picture;
+      final int width = pictureInfo.size.width.toInt();
+      final int height = pictureInfo.size.height.toInt();
+
+      final ui.Image image = await picture.toImage(width, height);
+      final ByteData? byteData = await image.toByteData(
+        format: ui.ImageByteFormat.png,
+      );
+      logoBytes = byteData?.buffer.asUint8List();
+
+      picture.dispose();
+      image.dispose();
     } catch (e) {
       // Fail silently or log if needed, logo will just be omitted
       print('Error loading logo: $e');
@@ -41,20 +60,14 @@ class ReportGenerator {
             padding: const pw.EdgeInsets.all(5),
             child: pw.Text(
               'Produto',
-              style: pw.TextStyle(
-                fontWeight: pw.FontWeight.bold,
-                fontSize: 12,
-              ),
+              style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12),
             ),
           ),
           pw.Padding(
             padding: const pw.EdgeInsets.all(5),
             child: pw.Text(
               'Qtd',
-              style: pw.TextStyle(
-                fontWeight: pw.FontWeight.bold,
-                fontSize: 12,
-              ),
+              style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12),
               textAlign: pw.TextAlign.center,
             ),
           ),
@@ -62,10 +75,7 @@ class ReportGenerator {
             padding: const pw.EdgeInsets.all(5),
             child: pw.Text(
               'Cód. Barras',
-              style: pw.TextStyle(
-                fontWeight: pw.FontWeight.bold,
-                fontSize: 12,
-              ),
+              style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12),
               textAlign: pw.TextAlign.center,
             ),
           ),
@@ -95,7 +105,9 @@ class ReportGenerator {
                   pw.Text(
                     '${b.brand} ${b.model}',
                     style: pw.TextStyle(
-                        fontWeight: pw.FontWeight.bold, fontSize: 12),
+                      fontWeight: pw.FontWeight.bold,
+                      fontSize: 12,
+                    ),
                   ),
                   pw.Text(
                     'Tipo: ${b.type} | Pack: ${b.packSize}',
@@ -164,9 +176,9 @@ class ReportGenerator {
                     fontSize: 12,
                   ),
                 ),
-                if (logoSvg != null) ...[
+                if (logoBytes != null) ...[
                   pw.SizedBox(width: 8),
-                  pw.SvgImage(svg: logoSvg, height: 20),
+                  pw.Image(pw.MemoryImage(logoBytes), height: 20),
                 ],
               ],
             ),
@@ -232,8 +244,7 @@ class ReportGenerator {
 
     await Printing.layoutPdf(
       onLayout: (PdfPageFormat format) async => pdf.save(),
-      name:
-          'relatorio_compras_${DateFormat('yyyyMMdd_HHmm').format(now)}.pdf',
+      name: 'relatorio_compras_${DateFormat('yyyyMMdd_HHmm').format(now)}.pdf',
     );
   }
 }

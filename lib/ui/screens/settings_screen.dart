@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:bms/state/app_state.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -57,6 +58,17 @@ class SettingsScreen extends StatelessWidget {
             title: Text('Versão'),
             subtitle: Text('3.1.0 - External Buy Feature'),
           ),
+          const SizedBox(height: 32),
+          Center(
+            child: Opacity(
+              opacity: 0.5,
+              child: SvgPicture.asset(
+                'assets/icons/logo-white.svg',
+                height: 40,
+              ),
+            ),
+          ),
+          const SizedBox(height: 32),
         ],
       ),
     );

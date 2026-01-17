@@ -1,0 +1,22 @@
+    <svg xmlns="http://www.w3.org/2000/svg" width="2048" height="1867.22" viewBox="0 0 1758.37 1603.18" preserveAspectRatio="xMidYMid meet">
+        <defs>
+            <mask id="cutout-mask">
+                <!-- 1. White base reveals everything -->
+                <rect x="-5000" y="-5000" width="10000" height="10000" fill="white" />
+                
+                <!-- 2. Black rectangles act as the negative mask (cutouts) -->
+                <rect x="-50" y="-34.74" width="100" height="402.37" fill="black" />
+                <rect transform="matrix(-0.5000000596046448, -0.8660253882408142, 0.8660253882408142, -0.5000000596046448, 577.1632080078125, -833.225341796875)" x="-50" y="-201.19" width="100" height="402.37" fill="black" />
+                <rect transform="matrix(-0.5000002980232239, 0.8660253882408142, -0.8660253882408142, -0.5000002980232239, -577.1632080078125, -833.225341796875)" x="-50" y="-201.19" width="100" height="402.37" fill="black" />
+            </mask>
+        </defs>
+
+        <g transform="matrix(1, 0, 0, 1, 879.1856689453125, 1137.138916015625)" style="isolation: isolate;">
+            <!-- 3. Apply the mask to a wrapper group in the same coordinate space -->
+            <g mask="url(#cutout-mask)">
+                <g transform="matrix(1, 0, 0, -1, -42.8748779296875, -671.0986328125)">
+                    <path d="M-216.93,-987.14 L-796.12,16.04 L-536.31,466.04 L622.06,466.04 L881.87,16.04 L302.68,-987.14 L-216.93,-987.14 ZM42.88,-837.14 L622.06,166.04 L-536.31,166.04 L42.88,-837.14 Z" fill="#FFFFFF" fill-rule="evenodd" />
+                </g>
+            </g>
+        </g>
+    </svg>
