@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:bms/core/models/battery.dart';
 import 'package:bms/state/app_state.dart';
+import 'package:bms/src/data/services/update_service.dart';
 import 'package:bms/ui/screens/dashboard_screen.dart';
 import 'package:bms/ui/screens/external_buy_screen.dart';
 import 'package:bms/ui/screens/inventory_screen.dart';
@@ -24,6 +25,53 @@ class _MainLayoutShellState extends State<MainLayoutShell> {
     InventoryScreen(),
     SettingsScreen(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkForUpdates();
+    });
+  }
+
+  Future<void> _checkForUpdates() async {
+    final service = UpdateService();
+    final info = await service.checkForUpdate();
+    if (info != null && mounted) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text('Nova versão disponível: ${info.version}'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Uma nova versão está disponível para download.'),
+                const SizedBox(height: 8),
+                const Text('Notas de lançamento:',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+                Text(info.releaseNotes),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Mais tarde'),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                service.downloadAndInstall(info.downloadUrl);
+              },
+              child: const Text('Atualizar Agora'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

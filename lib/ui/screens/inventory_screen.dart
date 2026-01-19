@@ -83,7 +83,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
 
     final copy = Battery(
       id: '', // New ID will be generated
-      name: '${original.name} (Cópia)',
+      name: '${original.name} Clone',
       type: original.type,
       brand: original.brand,
       model: original.model,
@@ -98,9 +98,9 @@ class _InventoryScreenState extends State<InventoryScreen> {
       voltage: original.voltage,
       chemistry: original.chemistry,
       notes: original.notes,
-      gondolaLimit: original.gondolaLimit,
+      gondolaLimit: 0,
       packSize: original.packSize,
-      gondolaQuantity: original.gondolaQuantity,
+      gondolaQuantity: 0,
     );
 
     await state.addBattery(copy);
@@ -483,14 +483,14 @@ class _InventoryScreenState extends State<InventoryScreen> {
               'Gôndola: ${b.gondolaQuantity}/${b.gondolaLimit} • Estoque Total: $sharedStock',
               style: const TextStyle(
                 fontSize: 11,
-                color: Colors.lightGreenAccent,
+                color: Color(0xFFEC4899),
               ),
             )
           else if (b.gondolaLimit > 0)
             // Fallback for non-gondola items that might have limit set (unlikely but safe)
             Text(
               'Meta Gôndola: ${b.gondolaLimit}',
-              style: const TextStyle(fontSize: 11, color: Colors.white54),
+              style: const TextStyle(fontSize: 11, color: Color(0xFFEC4899)),
             ),
           if (b.notes.isNotEmpty)
             Text(
