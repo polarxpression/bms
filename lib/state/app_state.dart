@@ -518,8 +518,11 @@ class AppState extends ChangeNotifier {
     groups.forEach((key, items) {
       int totalStock = 0;
       int totalGondola = 0;
-      int maxMinStock = 0;
       int maxGondolaLimit = 0;
+
+      // Logic for Min Stock Threshold
+      bool anyManual = false;
+      int maxManualThreshold = 0;
 
       Battery primary = items.first;
 
@@ -535,9 +538,13 @@ class AppState extends ChangeNotifier {
         // Sum Gondola Quantities
         totalGondola += b.gondolaQuantity;
 
-        if (b.minStockThreshold > maxMinStock) {
-          maxMinStock = b.minStockThreshold;
+        if (!b.useDefaultMinStock) {
+          anyManual = true;
+          if (b.minStockThreshold > maxManualThreshold) {
+            maxManualThreshold = b.minStockThreshold;
+          }
         }
+
         if (b.gondolaLimit > maxGondolaLimit) {
           maxGondolaLimit = b.gondolaLimit;
         }
@@ -547,9 +554,10 @@ class AppState extends ChangeNotifier {
         }
       }
 
-      final effectiveThreshold = maxMinStock > 0
-          ? maxMinStock
+      final effectiveThreshold = anyManual
+          ? maxManualThreshold
           : _defaultMinStockThreshold;
+      
       // final effectiveGondolaLimit = maxGondolaLimit > 0 ? maxGondolaLimit : _defaultGondolaCapacity;
 
       bool shouldAdd = false;
@@ -558,7 +566,11 @@ class AppState extends ChangeNotifier {
       // This means we compare gondola stock against the threshold if backroom stock is empty.
       int stockToCheck = (totalStock > 0) ? totalStock : totalGondola;
 
-      if (stockToCheck <= effectiveThreshold) {
+      // Special case: If user set manual threshold to 0, they likely want to DISABLE the alert.
+      // So if anyManual is true and effectiveThreshold is 0, we SKIP adding it.
+      if (anyManual && effectiveThreshold == 0) {
+        shouldAdd = false;
+      } else if (stockToCheck <= effectiveThreshold) {
         shouldAdd = true;
       }
 
@@ -577,6 +589,7 @@ class AppState extends ChangeNotifier {
             gondolaQuantity: totalGondola,
             location: primary.location,
             minStockThreshold: effectiveThreshold, // VISUAL: Target Threshold
+            useDefaultMinStock: !anyManual, // VISUAL
             gondolaLimit: maxGondolaLimit > 0
                 ? maxGondolaLimit
                 : _defaultGondolaCapacity,

@@ -24,6 +24,7 @@ class _BatteryFormScreenState extends State<BatteryFormScreen> {
 
   // NEW: Min Stock Threshold
   int _minStockThreshold = 0;
+  bool _useDefaultMinStock = true;
 
   // Controllers
   final TextEditingController _qtyController = TextEditingController();
@@ -57,6 +58,7 @@ class _BatteryFormScreenState extends State<BatteryFormScreen> {
     _gondolaQty = b?.gondolaQuantity ?? 0;
     _gondolaLimit = b?.gondolaLimit ?? 0;
     _minStockThreshold = b?.minStockThreshold ?? 0;
+    _useDefaultMinStock = b?.useDefaultMinStock ?? true;
 
     // Initialize controller based on current location
     _qtyController.text =
@@ -263,17 +265,33 @@ class _BatteryFormScreenState extends State<BatteryFormScreen> {
                     // We'll show it generally but clarify it's for Stock.
                     if (_currentLocation == 'Estoque') ...[
                       const SizedBox(height: 12),
-                      TextFormField(
-                        initialValue: _minStockThreshold.toString(),
-                        decoration: InputDecoration(
-                          labelText: 'Estoque Mínimo (Alerta de Compra)',
-                          helperText:
-                              'Opcional. 0 usa o valor padrão (${state.defaultMinStockThreshold}).',
+                      CheckboxListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(
+                          'Usar limite padrão do sistema (${state.defaultMinStockThreshold})',
+                          style: const TextStyle(fontSize: 14),
                         ),
-                        keyboardType: TextInputType.number,
-                        onSaved: (v) =>
-                            _minStockThreshold = int.tryParse(v!) ?? 0,
+                        value: _useDefaultMinStock,
+                        onChanged: (v) => setState(() {
+                          _useDefaultMinStock = v ?? true;
+                          if (_useDefaultMinStock) {
+                            _minStockThreshold = 0; // Or whatever, ignored
+                          }
+                        }),
+                        activeColor: const Color(0xFFEC4899),
                       ),
+                      if (!_useDefaultMinStock)
+                        TextFormField(
+                          initialValue: _minStockThreshold.toString(),
+                          decoration: const InputDecoration(
+                            labelText: 'Estoque Mínimo Personalizado',
+                            helperText:
+                                'Defina 0 para "Nenhum" (não alertar).',
+                          ),
+                          keyboardType: TextInputType.number,
+                          onSaved: (v) =>
+                              _minStockThreshold = int.tryParse(v!) ?? 0,
+                        ),
                     ],
 
                     _section('Outros'),
@@ -395,6 +413,7 @@ class _BatteryFormScreenState extends State<BatteryFormScreen> {
       quantity: _stockQty,
       lowStockThreshold: _threshold,
       minStockThreshold: _minStockThreshold, // NEW
+      useDefaultMinStock: _useDefaultMinStock, // NEW
       purchaseDate: widget.batteryToEdit?.purchaseDate ?? DateTime.now(),
       lastChanged: DateTime.now(),
       voltage: _voltage,

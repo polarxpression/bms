@@ -27,6 +27,9 @@ class Battery {
   int gondolaQuantity;
   bool discontinued;
 
+  // NEW: Whether to use the global default min stock or a custom one
+  bool useDefaultMinStock;
+
   Battery({
     required this.id,
     required this.name,
@@ -38,6 +41,7 @@ class Battery {
     required this.quantity,
     this.lowStockThreshold = 2,
     this.minStockThreshold = 0,
+    this.useDefaultMinStock = true,
     required this.purchaseDate,
     required this.lastChanged,
     this.voltage = '',
@@ -95,6 +99,7 @@ class Battery {
       quantity: rawQty,
       lowStockThreshold: data['lowStockThreshold'] ?? 2,
       minStockThreshold: data['minStockThreshold'] ?? 0,
+      useDefaultMinStock: data['useDefaultMinStock'] ?? true,
       purchaseDate:
           (data['purchaseDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
       lastChanged:
@@ -122,6 +127,7 @@ class Battery {
       'quantity': quantity,
       'lowStockThreshold': lowStockThreshold,
       'minStockThreshold': minStockThreshold,
+      'useDefaultMinStock': useDefaultMinStock,
       'purchaseDate': Timestamp.fromDate(purchaseDate),
       'lastChanged': Timestamp.fromDate(lastChanged),
       'voltage': voltage,
@@ -136,3 +142,4 @@ class Battery {
     };
   }
 }
+
