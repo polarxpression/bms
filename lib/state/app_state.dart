@@ -562,9 +562,10 @@ class AppState extends ChangeNotifier {
 
       bool shouldAdd = false;
 
-      // Rule: if totalStock is 0, gondola stock is considered its stock
-      // This means we compare gondola stock against the threshold if backroom stock is empty.
-      int stockToCheck = (totalStock > 0) ? totalStock : totalGondola;
+      // Rule: Always use totalStock (Reserve) as the primary stock to check.
+      // We do not fall back to gondola stock because that masks 'Empty Reserve' situations
+      // (e.g., when Gondola is full but Reserve is empty, we still want to buy if threshold > 0).
+      int stockToCheck = totalStock;
 
       // Special case: If user set manual threshold to 0, they likely want to DISABLE the alert.
       // So if anyManual is true and effectiveThreshold is 0, we SKIP adding it.
