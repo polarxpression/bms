@@ -83,7 +83,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
 
     final copy = Battery(
       id: '', // New ID will be generated
-      name: '${original.name} Clone',
+      name: original.name,
       type: original.type,
       brand: original.brand,
       model: original.model,
@@ -98,7 +98,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
       voltage: original.voltage,
       chemistry: original.chemistry,
       notes: original.notes,
-      gondolaLimit: 0,
+      gondolaLimit: original.gondolaLimit,
       packSize: original.packSize,
       gondolaQuantity: 0,
     );

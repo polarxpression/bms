@@ -7,11 +7,11 @@ import 'package:bms/ui/main_layout.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  runApp(const BatteryBuddyApp());
+  runApp(const BMSApp());
 }
 
-class BatteryBuddyApp extends StatelessWidget {
-  const BatteryBuddyApp({super.key});
+class BMSApp extends StatelessWidget {
+  const BMSApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +22,7 @@ class BatteryBuddyApp extends StatelessWidget {
     return AppStateProvider(
       notifier: AppState(),
       child: MaterialApp(
-        title: 'Battery Buddy',
+        title: 'BMS (Battery Management System)',
         debugShowCheckedModeBanner: false,
         themeMode: ThemeMode.dark,
         darkTheme: ThemeData(
