@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:bms/core/models/battery.dart';
 import 'package:bms/state/app_state.dart';
+import 'package:bms/ui/screens/barcode_scanner_simple.dart';
 
 class BatteryFormScreen extends StatefulWidget {
   final Battery? batteryToEdit;
@@ -28,9 +29,10 @@ class _BatteryFormScreenState extends State<BatteryFormScreen> {
 
   // Controllers
   final TextEditingController _qtyController = TextEditingController();
+  final TextEditingController _barcodeController = TextEditingController();
 
   // Hidden/Defaulted fields preservation
-  late String _name, _barcode, _img, _voltage, _chemistry;
+  late String _name, _img, _voltage, _chemistry;
   late int _threshold, _packSize;
   DateTime? _expiryDate;
 
@@ -66,7 +68,7 @@ class _BatteryFormScreenState extends State<BatteryFormScreen> {
 
     // Preserve others
     _name = b?.name ?? '';
-    _barcode = b?.barcode ?? '';
+    _barcodeController.text = b?.barcode ?? '';
     _img = b?.imageUrl ?? '';
     _voltage = b?.voltage ?? '';
     _chemistry = b?.chemistry ?? '';
@@ -78,6 +80,7 @@ class _BatteryFormScreenState extends State<BatteryFormScreen> {
   @override
   void dispose() {
     _qtyController.dispose();
+    _barcodeController.dispose();
     super.dispose();
   }
 
@@ -100,6 +103,19 @@ class _BatteryFormScreenState extends State<BatteryFormScreen> {
     // 3. Update input with NEW location variable
     int newVal = (_currentLocation == 'Estoque' ? _stockQty : _gondolaQty);
     _qtyController.text = newVal.toString();
+  }
+
+  Future<void> _scanBarcode() async {
+    final scannedCode = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(builder: (context) => const BarcodeScannerSimple()),
+    );
+
+    if (scannedCode != null && scannedCode.isNotEmpty) {
+      setState(() {
+        _barcodeController.text = scannedCode;
+      });
+    }
   }
 
   @override
@@ -211,12 +227,15 @@ class _BatteryFormScreenState extends State<BatteryFormScreen> {
                     ),
                     const SizedBox(height: 12),
                     TextFormField(
-                      initialValue: _barcode,
-                      decoration: const InputDecoration(
+                      controller: _barcodeController,
+                      decoration: InputDecoration(
                         labelText: 'Código de Barras (EAN)',
-                        prefixIcon: Icon(Icons.qr_code),
+                        prefixIcon: const Icon(Icons.qr_code),
+                        suffixIcon: IconButton(
+                          icon: const Icon(Icons.camera_alt),
+                          onPressed: _scanBarcode,
+                        ),
                       ),
-                      onSaved: (v) => _barcode = v ?? '',
                     ),
 
                     _section('Localização & Quantidade'),
@@ -417,7 +436,7 @@ class _BatteryFormScreenState extends State<BatteryFormScreen> {
       type: _type,
       brand: _brand,
       model: _model,
-      barcode: _barcode,
+      barcode: _barcodeController.text, // Use the controller text
       imageUrl: _img,
       quantity: _stockQty,
       lowStockThreshold: _threshold,
