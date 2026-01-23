@@ -209,6 +209,15 @@ class _BatteryFormScreenState extends State<BatteryFormScreen> {
                       existingTypes,
                       (v) => _type = v,
                     ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      initialValue: _barcode,
+                      decoration: const InputDecoration(
+                        labelText: 'Código de Barras (EAN)',
+                        prefixIcon: Icon(Icons.qr_code),
+                      ),
+                      onSaved: (v) => _barcode = v ?? '',
+                    ),
 
                     _section('Localização & Quantidade'),
                     // Location Dropdown

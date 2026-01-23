@@ -136,6 +136,9 @@ class SearchQueryParser {
     if (key == 'type' || key == 'tipo') {
       fieldVal = b.type;
     }
+    if (key == 'barcode' || key == 'ean' || key == 'code') {
+      fieldVal = b.barcode;
+    }
     if (key == 'loc' || key == 'location' || key == 'local') {
       fieldVal = b.location;
     }
@@ -178,6 +181,7 @@ class SearchQueryParser {
       b.brand,
       b.model,
       b.type,
+      b.barcode,
       b.location,
       b.notes,
       b.voltage,

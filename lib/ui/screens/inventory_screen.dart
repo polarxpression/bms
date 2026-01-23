@@ -324,6 +324,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
               label: const Text('Nome'),
               onSort: (idx, asc) => _handleSort(SortOption.name, asc),
             ),
+            const DataColumn(label: Text('Código de Barras')),
             DataColumn(
               label: const Text('Marca'),
               onSort: (idx, asc) => _handleSort(SortOption.brand, asc),
@@ -369,6 +370,16 @@ class _InventoryScreenState extends State<InventoryScreen> {
                     b.name,
                     style: TextStyle(
                       decoration: isExpired ? TextDecoration.lineThrough : null,
+                    ),
+                  ),
+                ),
+                DataCell(
+                  Text(
+                    b.barcode.isNotEmpty ? b.barcode : '-',
+                    style: const TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: 12,
+                      color: Colors.grey,
                     ),
                   ),
                 ),
@@ -465,6 +476,24 @@ class _InventoryScreenState extends State<InventoryScreen> {
           Text(
             '${b.brand} • ${b.type} • Pack x${b.packSize} ${b.voltage.isNotEmpty ? '• ${b.voltage}' : ''}',
           ),
+          if (b.barcode.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Row(
+                children: [
+                  const Icon(Icons.qr_code, size: 10, color: Colors.grey),
+                  const SizedBox(width: 4),
+                  Text(
+                    b.barcode,
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontFamily: 'monospace',
+                      color: Colors.grey,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           Row(
             children: [
               const Icon(Icons.location_on, size: 12, color: Colors.grey),
@@ -686,7 +715,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                 title: 'Metadados (:)',
                 ex: 'estoque:>10 gondola:<5',
                 desc:
-                    'Filtra campos específicos.\nCampos: estoque/stock, gondola/gôndola, limit, brand, model, type, loc, volt, chem, notes.',
+                    'Filtra campos específicos.\nCampos: estoque/stock, gondola/gôndola, limit, brand, model, type, barcode/ean, loc, volt, chem, notes.',
               ),
             ],
           ),
