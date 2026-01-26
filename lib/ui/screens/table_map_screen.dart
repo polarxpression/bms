@@ -648,6 +648,25 @@ class _TableMapScreenState extends State<TableMapScreen> {
             orElse: () => initialBattery,
           );
 
+          // Resolve linked battery if any
+          Battery? linkedStock;
+          if (battery.linkedBatteryId != null) {
+            linkedStock = state.batteries.firstWhere(
+              (b) => b.id == battery.linkedBatteryId,
+              orElse: () => Battery(
+                id: 'unknown',
+                name: 'Unknown Stock',
+                type: '',
+                brand: '',
+                model: '',
+                barcode: '',
+                quantity: 0,
+                purchaseDate: DateTime.now(),
+                lastChanged: DateTime.now(),
+              ),
+            );
+          }
+
           return Dialog(
             backgroundColor: const Color(0xFF1E1E1E),
             shape: RoundedRectangleBorder(
@@ -713,10 +732,16 @@ class _TableMapScreenState extends State<TableMapScreen> {
                               label: 'Pack',
                               value: 'x${battery.packSize}',
                             ),
-                            _DetailBadge(
-                              label: 'Estoque',
-                              value: '${battery.quantity}',
-                            ),
+                            if (linkedStock != null)
+                              _DetailBadge(
+                                label: 'Estoque (Link)',
+                                value: '${linkedStock.quantity}',
+                              )
+                            else
+                              _DetailBadge(
+                                label: 'Estoque',
+                                value: '${battery.quantity}',
+                              ),
                             _DetailBadge(label: 'Local', value: '$x, $y'),
                           ],
                         ),

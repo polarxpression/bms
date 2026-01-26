@@ -30,6 +30,9 @@ class Battery {
   // NEW: Whether to use the global default min stock or a custom one
   bool useDefaultMinStock;
 
+  // NEW: Explicit link to a stock battery (override implicit matching)
+  String? linkedBatteryId;
+
   Battery({
     required this.id,
     required this.name,
@@ -42,6 +45,7 @@ class Battery {
     this.lowStockThreshold = 2,
     this.minStockThreshold = 0,
     this.useDefaultMinStock = true,
+    this.linkedBatteryId,
     required this.purchaseDate,
     required this.lastChanged,
     this.voltage = '',
@@ -113,6 +117,7 @@ class Battery {
       packSize: data['packSize'] ?? 1,
       gondolaQuantity: rawGondolaQty,
       discontinued: data['discontinued'] ?? false,
+      linkedBatteryId: data['linkedBatteryId'],
     );
   }
 
@@ -139,6 +144,7 @@ class Battery {
       'packSize': packSize,
       'gondolaQuantity': gondolaQuantity,
       'discontinued': discontinued,
+      'linkedBatteryId': linkedBatteryId,
     };
   }
 }

@@ -26,6 +26,9 @@ class _BatteryFormScreenState extends State<BatteryFormScreen> {
   // NEW: Min Stock Threshold
   int _minStockThreshold = 0;
   bool _useDefaultMinStock = true;
+  
+  // NEW: Linked Battery ID
+  String? _linkedBatteryId;
 
   // Controllers
   final TextEditingController _qtyController = TextEditingController();
@@ -46,6 +49,7 @@ class _BatteryFormScreenState extends State<BatteryFormScreen> {
     _type = b?.type ?? 'AA';
     _notes = b?.notes ?? '';
     _discontinued = b?.discontinued ?? false;
+    _linkedBatteryId = b?.linkedBatteryId;
 
     // Location Logic
     String rawLoc = b?.location ?? '';
@@ -138,6 +142,13 @@ class _BatteryFormScreenState extends State<BatteryFormScreen> {
     final existingBrands = getOptions(state.batteries, (b) => b.brand, _brand);
     final existingModels = getOptions(state.batteries, (b) => b.model, _model);
     final existingTypes = getOptions(state.batteries, (b) => b.type, _type);
+
+    // Filter batteries for "Stock" linking
+    // Exclude self and non-stock items
+    final stockBatteries = state.batteries.where((b) {
+      if (b.id == widget.batteryToEdit?.id) return false;
+      return b.location == 'Estoque';
+    }).toList();
 
     return Container(
       decoration: const BoxDecoration(
@@ -259,6 +270,38 @@ class _BatteryFormScreenState extends State<BatteryFormScreen> {
                       dropdownColor: const Color(0xFF27272A),
                     ),
                     const SizedBox(height: 12),
+                    
+                    // NEW: Linked Battery Dropdown (Only if Gondola)
+                    if (_currentLocation == 'Gôndola') ...[
+                       DropdownButtonFormField<String>(
+                        initialValue: _linkedBatteryId,
+                        decoration: const InputDecoration(
+                          labelText: 'Vincular ao Estoque (Opcional)',
+                          helperText: 'Selecionar produto correspondente no estoque',
+                          prefixIcon: Icon(Icons.link),
+                        ),
+                        dropdownColor: const Color(0xFF27272A),
+                        isExpanded: true,
+                        items: [
+                          const DropdownMenuItem<String>(
+                            value: null,
+                            child: Text('Sem vínculo (Nenhum)'),
+                          ),
+                          ...stockBatteries.map((b) {
+                            return DropdownMenuItem<String>(
+                              value: b.id,
+                              child: Text(
+                                '${b.name} (Qtd: ${b.quantity})',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            );
+                          }),
+                        ],
+                        onChanged: (v) => setState(() => _linkedBatteryId = v),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
 
                     // Quantity Field (Dynamic)
                     TextFormField(
@@ -453,6 +496,7 @@ class _BatteryFormScreenState extends State<BatteryFormScreen> {
       gondolaQuantity: _gondolaQty,
       packSize: _packSize,
       discontinued: _discontinued,
+      linkedBatteryId: _linkedBatteryId, // NEW
     );
     if (widget.batteryToEdit == null) {
       state.addBattery(bat);
