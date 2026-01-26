@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:bms/core/models/battery.dart';
 import 'package:bms/state/app_state.dart';
 import 'package:bms/ui/screens/barcode_scanner_simple.dart';
+import 'package:bms/core/utils/search_query_parser.dart'; // NEW import
 
 class BatteryFormScreen extends StatefulWidget {
   final Battery? batteryToEdit;
@@ -271,34 +272,50 @@ class _BatteryFormScreenState extends State<BatteryFormScreen> {
                     ),
                     const SizedBox(height: 12),
                     
-                    // NEW: Linked Battery Dropdown (Only if Gondola)
+                    // NEW: Linked Battery (Searchable)
                     if (_currentLocation == 'Gôndola') ...[
-                       DropdownButtonFormField<String>(
-                        initialValue: _linkedBatteryId,
-                        decoration: const InputDecoration(
-                          labelText: 'Vincular ao Estoque (Opcional)',
-                          helperText: 'Selecionar produto correspondente no estoque',
-                          prefixIcon: Icon(Icons.link),
-                        ),
-                        dropdownColor: const Color(0xFF27272A),
-                        isExpanded: true,
-                        items: [
-                          const DropdownMenuItem<String>(
-                            value: null,
-                            child: Text('Sem vínculo (Nenhum)'),
+                      GestureDetector(
+                        onTap: () {
+                          showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            backgroundColor: const Color(0xFF141414),
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                            ),
+                            builder: (ctx) {
+                              return _LinkedBatteryPicker(
+                                batteries: stockBatteries,
+                                onSelected: (id) {
+                                  setState(() => _linkedBatteryId = id);
+                                  Navigator.pop(ctx);
+                                },
+                                onClear: () {
+                                  setState(() => _linkedBatteryId = null);
+                                  Navigator.pop(ctx);
+                                },
+                              );
+                            },
+                          );
+                        },
+                        child: InputDecorator(
+                          decoration: const InputDecoration(
+                            labelText: 'Vincular ao Estoque (Opcional)',
+                            helperText: 'Toque para selecionar produto do estoque',
+                            prefixIcon: Icon(Icons.link),
+                            suffixIcon: Icon(Icons.arrow_drop_down),
                           ),
-                          ...stockBatteries.map((b) {
-                            return DropdownMenuItem<String>(
-                              value: b.id,
-                              child: Text(
-                                '${b.name} (Qtd: ${b.quantity})',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            );
-                          }),
-                        ],
-                        onChanged: (v) => setState(() => _linkedBatteryId = v),
+                          child: Text(
+                            _linkedBatteryId == null
+                                ? 'Sem vínculo (Nenhum)'
+                                : (stockBatteries.firstWhere((b) => b.id == _linkedBatteryId, orElse: () => Battery(id: '', name: 'Desconhecido', type: '', brand: '', model: '', barcode: '', quantity: 0, purchaseDate: DateTime.now(), lastChanged: DateTime.now())).name),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: _linkedBatteryId == null ? Colors.grey : Colors.white,
+                            ),
+                          ),
+                        ),
                       ),
                       const SizedBox(height: 12),
                     ],
@@ -503,6 +520,147 @@ class _BatteryFormScreenState extends State<BatteryFormScreen> {
     } else {
       state.updateBattery(bat);
     }
-    Navigator.pop(context);
-  }
-}
+        Navigator.pop(context);
+      }
+    }
+    
+    class _LinkedBatteryPicker extends StatefulWidget {
+      final List<Battery> batteries;
+      final Function(String) onSelected;
+      final VoidCallback onClear;
+    
+      const _LinkedBatteryPicker({
+        required this.batteries,
+        required this.onSelected,
+        required this.onClear,
+      });
+    
+      @override
+      State<_LinkedBatteryPicker> createState() => _LinkedBatteryPickerState();
+    }
+    
+    class _LinkedBatteryPickerState extends State<_LinkedBatteryPicker> {
+      String _query = '';
+      final TextEditingController _searchController = TextEditingController();
+    
+      @override
+      void dispose() {
+        _searchController.dispose();
+        super.dispose();
+      }
+    
+      @override
+      Widget build(BuildContext context) {
+        final filtered = widget.batteries.where((b) {
+          return SearchQueryParser.matches(b, _query);
+        }).toList();
+    
+        return Container(
+          padding: EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 16,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+          ),
+          height: MediaQuery.of(context).size.height * 0.7,
+          child: Column(
+            children: [
+              const Text(
+                'Vincular ao Estoque',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _searchController,
+                onChanged: (v) => setState(() => _query = v),
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: 'Procurar no estoque...',
+                  hintStyle: const TextStyle(color: Colors.grey),
+                  prefixIcon: const Icon(Icons.search, color: Colors.blueAccent),
+                  suffixIcon: _query.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, color: Colors.grey),
+                          onPressed: () {
+                            setState(() => _query = '');
+                            _searchController.clear();
+                          },
+                        )
+                      : null,
+                  filled: true,
+                  fillColor: Colors.white.withValues(alpha: 0.05),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              ListTile(
+                leading: const Icon(Icons.link_off, color: Colors.redAccent),
+                title: const Text(
+                  'Remover Vínculo',
+                  style: TextStyle(color: Colors.redAccent),
+                ),
+                onTap: widget.onClear,
+              ),
+              const Divider(height: 1, color: Colors.white10),
+              Expanded(
+                child: filtered.isEmpty
+                    ? Center(
+                        child: Text(
+                          _query.isEmpty
+                              ? 'Nenhum item de estoque disponível.'
+                              : 'Nenhum resultado para "$_query"',
+                          style: const TextStyle(color: Colors.grey),
+                        ),
+                      )
+                    : ListView.builder(
+                        itemCount: filtered.length,
+                        itemBuilder: (ctx, idx) {
+                          final b = filtered[idx];
+                          return ListTile(
+                            leading: b.imageUrl.isNotEmpty
+                                ? Image.network(
+                                    b.imageUrl,
+                                    width: 30,
+                                    height: 30,
+                                    errorBuilder: (_, __, ___) => const Icon(
+                                      Icons.battery_std,
+                                      color: Colors.grey,
+                                    ),
+                                  )
+                                : const Icon(Icons.battery_std, color: Colors.grey),
+                            title: Text(
+                              b.name,
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                            subtitle: Text(
+                              '${b.brand} • ${b.model} • ${b.type}',
+                              style: const TextStyle(
+                                color: Colors.grey,
+                                fontSize: 12,
+                              ),
+                            ),
+                            trailing: Text(
+                              'Qtd: ${b.quantity}',
+                              style: const TextStyle(
+                                color: Colors.blueAccent,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            onTap: () => widget.onSelected(b.id),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
+        );
+      }
+    }
+    
