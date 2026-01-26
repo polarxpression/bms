@@ -732,6 +732,11 @@ class _TableMapScreenState extends State<TableMapScreen> {
                               label: 'Pack',
                               value: 'x${battery.packSize}',
                             ),
+                            if (battery.barcode.isNotEmpty)
+                              _DetailBadge(
+                                label: 'EAN',
+                                value: battery.barcode,
+                              ),
                             if (linkedStock != null)
                               _DetailBadge(
                                 label: 'Estoque (Link)',
