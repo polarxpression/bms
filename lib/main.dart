@@ -22,7 +22,7 @@ class BMSApp extends StatelessWidget {
     return AppStateProvider(
       notifier: AppState(),
       child: MaterialApp(
-        title: 'BMS (Battery Management System)',
+        title: 'PowerTrack BMS',
         debugShowCheckedModeBanner: false,
         themeMode: ThemeMode.dark,
         darkTheme: ThemeData(
