@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:bms/state/app_state.dart';
 import 'package:bms/core/models/battery.dart';
 import 'package:bms/core/utils/search_query_parser.dart';
+import 'package:bms/ui/screens/battery_form_screen.dart';
 
 class TableMapScreen extends StatefulWidget {
   const TableMapScreen({super.key});
@@ -819,6 +820,25 @@ class _TableMapScreenState extends State<TableMapScreen> {
                         TextButton(
                           onPressed: () => Navigator.pop(ctx),
                           child: const Text('Fechar'),
+                        ),
+                        const SizedBox(width: 8),
+                        TextButton.icon(
+                          icon: const Icon(Icons.edit, size: 18),
+                          label: const Text('Editar'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.blueAccent,
+                          ),
+                          onPressed: () {
+                            // Don't pop to keep details visible/updating behind?
+                            // Or pop?
+                            // Let's keep it.
+                            showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              backgroundColor: Colors.transparent,
+                              builder: (context) => BatteryFormScreen(batteryToEdit: battery),
+                            );
+                          },
                         ),
                         const SizedBox(width: 8),
                         TextButton.icon(
