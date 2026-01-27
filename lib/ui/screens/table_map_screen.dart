@@ -740,7 +740,8 @@ class _TableMapScreenState extends State<TableMapScreen> {
                             if (linkedStock != null)
                               _DetailBadge(
                                 label: 'Estoque (Link)',
-                                value: '${linkedStock.quantity}',
+                                value:
+                                    '${linkedStock.quantity} (x${linkedStock.packSize})',
                               )
                             else
                               _DetailBadge(
@@ -844,14 +845,15 @@ class _TableMapScreenState extends State<TableMapScreen> {
                   const Divider(height: 1, color: Colors.white10),
                   Padding(
                     padding: const EdgeInsets.all(8),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
+                    child: Wrap(
+                      alignment: WrapAlignment.end,
+                      spacing: 8,
+                      runSpacing: 8,
                       children: [
                         TextButton(
                           onPressed: () => Navigator.pop(ctx),
                           child: const Text('Fechar'),
                         ),
-                        const SizedBox(width: 8),
                         TextButton.icon(
                           icon: const Icon(Icons.edit, size: 18),
                           label: const Text('Editar'),
@@ -866,11 +868,12 @@ class _TableMapScreenState extends State<TableMapScreen> {
                               context: context,
                               isScrollControlled: true,
                               backgroundColor: Colors.transparent,
-                              builder: (context) => BatteryFormScreen(batteryToEdit: battery),
+                              builder:
+                                  (context) =>
+                                      BatteryFormScreen(batteryToEdit: battery),
                             );
                           },
                         ),
-                        const SizedBox(width: 8),
                         TextButton.icon(
                           icon: const Icon(Icons.delete_outline, size: 18),
                           label: const Text('Remover do Mapa'),
@@ -1071,7 +1074,7 @@ class _DetailBadge extends StatelessWidget {
         children: [
           Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),
           const SizedBox(height: 2),
-          Text(
+          SelectableText(
             value,
             style: const TextStyle(
               fontSize: 14,

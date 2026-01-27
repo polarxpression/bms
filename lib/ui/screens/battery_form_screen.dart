@@ -238,16 +238,35 @@ class _BatteryFormScreenState extends State<BatteryFormScreen> {
                       (v) => _type = v,
                     ),
                     const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _barcodeController,
-                      decoration: InputDecoration(
-                        labelText: 'Código de Barras (EAN)',
-                        prefixIcon: const Icon(Icons.qr_code),
-                        suffixIcon: IconButton(
-                          icon: const Icon(Icons.camera_alt),
-                          onPressed: _scanBarcode,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _barcodeController,
+                            decoration: InputDecoration(
+                              labelText: 'Código de Barras (EAN)',
+                              prefixIcon: const Icon(Icons.qr_code),
+                              suffixIcon: IconButton(
+                                icon: const Icon(Icons.camera_alt),
+                                onPressed: _scanBarcode,
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
+                        const SizedBox(width: 12),
+                        SizedBox(
+                          width: 100,
+                          child: TextFormField(
+                            initialValue: _packSize.toString(),
+                            decoration: const InputDecoration(
+                              labelText: 'Pack Size',
+                              prefixIcon: Icon(Icons.layers),
+                            ),
+                            keyboardType: TextInputType.number,
+                            onSaved: (v) => _packSize = int.tryParse(v!) ?? 1,
+                          ),
+                        ),
+                      ],
                     ),
 
                     _section('Localização & Quantidade'),
@@ -640,7 +659,7 @@ class _BatteryFormScreenState extends State<BatteryFormScreen> {
                               style: const TextStyle(color: Colors.white),
                             ),
                             subtitle: Text(
-                              '${b.brand} • ${b.model} • ${b.type}',
+                              '${b.brand} • ${b.model} • ${b.type} • x${b.packSize}',
                               style: const TextStyle(
                                 color: Colors.grey,
                                 fontSize: 12,
