@@ -23,6 +23,7 @@ class AppState extends ChangeNotifier {
   // Settings
   int _defaultGondolaCapacity = 20;
   int _defaultMinStockThreshold = 10;
+  String _imgbbApiKey = ''; // NEW
 
   // Maps Data
   List<BatteryMap> _maps = [];
@@ -33,6 +34,7 @@ class AppState extends ChangeNotifier {
   bool get isLoading => _isLoading;
   int get defaultGondolaCapacity => _defaultGondolaCapacity;
   int get defaultMinStockThreshold => _defaultMinStockThreshold;
+  String get imgbbApiKey => _imgbbApiKey; // NEW
   Map<String, String> get batteryMap => Map.unmodifiable(_batteryMap);
   List<BatteryMap> get maps => List.unmodifiable(_maps);
   BatteryMap? get currentMap => _maps.isEmpty || _currentMapId == null
@@ -62,6 +64,14 @@ class AppState extends ChangeNotifier {
     }, SetOptions(merge: true));
   }
 
+  Future<void> updateImgbbApiKey(String key) async {
+    _imgbbApiKey = key;
+    notifyListeners();
+    await _settingsCollection.doc('config').set({
+      'imgbbApiKey': key,
+    }, SetOptions(merge: true));
+  }
+
   void _initRealtimeUpdates() {
     // Batteries
     _subscription = _collection.snapshots().listen((snapshot) {
@@ -84,6 +94,9 @@ class AppState extends ChangeNotifier {
             }
             if (data.containsKey('defaultMinStockThreshold')) {
               _defaultMinStockThreshold = data['defaultMinStockThreshold'];
+            }
+            if (data.containsKey('imgbbApiKey')) {
+              _imgbbApiKey = data['imgbbApiKey'];
             }
             notifyListeners();
           }
@@ -375,37 +388,45 @@ class AppState extends ChangeNotifier {
   }
 
   Future<List<String>> findBatteryInMaps(String batteryId) async {
-    try {
-      // Query all 'cells' collections across the database
-      final query = await FirebaseFirestore.instance
-          .collectionGroup('cells')
-          .where('batteryId', isEqualTo: batteryId)
-          .get();
-
-      final Set<String> mapNames = {};
-
-      for (var doc in query.docs) {
-        // Doc path: maps/{mapId}/cells/{cellId}
-        // parent is 'cells', parent.parent is 'maps/{mapId}'
-        final mapRef = doc.reference.parent.parent;
-        if (mapRef != null) {
-          final mapId = mapRef.id;
-          final map = _maps.firstWhere(
-            (m) => m.id == mapId,
-            orElse: () => BatteryMap(
-              id: 'unknown',
-              name: 'Mapa Desconhecido',
-              purpose: '',
-            ),
-          );
-          mapNames.add('${map.name} (${map.purpose})');
-        }
-      }
-      return mapNames.toList();
-    } catch (e) {
-      // print('Error finding battery in maps: $e');
-      return [];
+    final List<String> results = [];
+    
+    // Check current in-memory map first for speed
+    if (_currentMapId != null && _batteryMap.containsValue(batteryId)) {
+       // We know it's in current map, but we want to know exact cell count or just presence?
+       // The UI just lists map names.
+       final current = currentMap;
+       if (current != null) {
+         results.add('${current.name} (${current.purpose})');
+       }
     }
+
+    // Iterate all maps to check their cells collection
+    // This avoids collectionGroup index requirements
+    for (var map in _maps) {
+      // If we already found it in current map, skip querying it again if you want unique names
+      // But let's just query to be safe and consistent, or skip if matched.
+      // Actually, let's just query all to be sure.
+      
+      try {
+        final query = await _mapsCollection
+            .doc(map.id)
+            .collection('cells')
+            .where('batteryId', isEqualTo: batteryId)
+            .limit(1) // We just need to know if it exists in this map
+            .get();
+
+        if (query.docs.isNotEmpty) {
+          final label = '${map.name} (${map.purpose})';
+          if (!results.contains(label)) {
+            results.add(label);
+          }
+        }
+      } catch (e) {
+        // Ignore error for this map
+      }
+    }
+    
+    return results;
   }
 
   int get totalBatteries =>

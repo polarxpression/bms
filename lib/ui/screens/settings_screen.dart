@@ -41,6 +41,18 @@ class SettingsScreen extends StatelessWidget {
             },
           ),
           const Divider(color: Colors.white10),
+          ListTile(
+            leading: const Icon(Icons.cloud_upload, color: Colors.purpleAccent),
+            title: const Text('Configuração de Imagens (ImgBB)'),
+            subtitle: Text(
+              state.imgbbApiKey.isEmpty ? 'Não configurado' : 'Chave API Configurada',
+            ),
+            trailing: const Icon(Icons.edit, color: Colors.grey),
+            onTap: () {
+              _showImgbbDialog(context, state);
+            },
+          ),
+          const Divider(color: Colors.white10),
           const ListTile(
             leading: Icon(Icons.storage),
             title: Text('Estrutura de Dados'),
@@ -150,6 +162,51 @@ class SettingsScreen extends StatelessWidget {
                 state.updateDefaultMinStockThreshold(val);
                 Navigator.pop(ctx);
               }
+            },
+            child: const Text('Salvar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showImgbbDialog(BuildContext context, AppState state) {
+    final controller = TextEditingController(text: state.imgbbApiKey);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF141414),
+        title: const Text(
+          'Configurar ImgBB API',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Insira sua chave de API do ImgBB para permitir o upload de imagens.',
+              style: TextStyle(color: Colors.white70, fontSize: 12),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              style: const TextStyle(color: Colors.white),
+              decoration: const InputDecoration(
+                labelText: 'API Key',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () {
+              state.updateImgbbApiKey(controller.text.trim());
+              Navigator.pop(ctx);
             },
             child: const Text('Salvar'),
           ),

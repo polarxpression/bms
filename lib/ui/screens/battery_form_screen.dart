@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:bms/core/models/battery.dart';
 import 'package:bms/state/app_state.dart';
 import 'package:bms/ui/screens/barcode_scanner_simple.dart';
-import 'package:bms/core/utils/search_query_parser.dart'; // NEW import
+import 'package:bms/core/utils/search_query_parser.dart';
+import 'package:image_picker/image_picker.dart'; // NEW
+import 'package:bms/core/services/image_upload_service.dart'; // NEW
 
 class BatteryFormScreen extends StatefulWidget {
   final Battery? batteryToEdit;
@@ -30,6 +32,9 @@ class _BatteryFormScreenState extends State<BatteryFormScreen> {
   
   // NEW: Linked Battery ID
   String? _linkedBatteryId;
+  
+  // NEW: Upload State
+  bool _isUploading = false;
 
   // Controllers
   final TextEditingController _qtyController = TextEditingController();
@@ -123,6 +128,43 @@ class _BatteryFormScreenState extends State<BatteryFormScreen> {
     }
   }
 
+  Future<void> _pickImage(AppState state) async {
+    if (state.imgbbApiKey.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Configure a chave da API do ImgBB nas Configurações primeiro.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      setState(() => _isUploading = true);
+      
+      final url = await ImageUploadService.uploadImage(pickedFile, state.imgbbApiKey);
+      
+      if (mounted) {
+        setState(() {
+          _isUploading = false;
+          if (url != null) {
+             _img = url;
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Falha ao enviar imagem. Verifique sua chave API.'),
+                backgroundColor: Colors.redAccent,
+              ),
+            );
+          }
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = AppStateProvider.of(context);
@@ -208,6 +250,54 @@ class _BatteryFormScreenState extends State<BatteryFormScreen> {
               Expanded(
                 child: ListView(
                   children: [
+                    // Image Section
+                    Center(
+                      child: GestureDetector(
+                        onTap: () => _pickImage(state),
+                        child: Stack(
+                          alignment: Alignment.bottomRight,
+                          children: [
+                            Container(
+                              width: 120,
+                              height: 120,
+                              decoration: BoxDecoration(
+                                color: Colors.white10,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: Colors.white24),
+                                image: _img.isNotEmpty
+                                    ? DecorationImage(
+                                        image: NetworkImage(_img),
+                                        fit: BoxFit.cover,
+                                      )
+                                    : null,
+                              ),
+                              child: _isUploading
+                                  ? const Center(child: CircularProgressIndicator())
+                                  : (_img.isEmpty
+                                      ? const Icon(
+                                          Icons.add_a_photo,
+                                          size: 40,
+                                          color: Colors.grey,
+                                        )
+                                      : null),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFEC4899),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.edit,
+                                color: Colors.white,
+                                size: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    
                     _section('Identificação'),
                     Row(
                       children: [
