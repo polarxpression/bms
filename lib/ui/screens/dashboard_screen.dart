@@ -247,6 +247,52 @@ class _RestockItem extends StatelessWidget {
   final Color cardColor;
   const _RestockItem({required this.battery, required this.cardColor});
 
+  void _showMapInfo(BuildContext context, Battery b, AppState state) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Localização: ${b.name}'),
+        content: FutureBuilder<List<String>>(
+          future: state.findBatteryInMaps(b.id),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const SizedBox(
+                height: 100,
+                child: Center(child: CircularProgressIndicator()),
+              );
+            }
+            final maps = snapshot.data ?? [];
+            if (maps.isEmpty) {
+              return const Text(
+                'Este item não está posicionado em nenhum mapa.',
+              );
+            }
+            return SizedBox(
+              width: double.maxFinite,
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: maps.length,
+                itemBuilder: (ctx, idx) => ListTile(
+                  leading: const Icon(
+                    Icons.location_on,
+                    color: Colors.blueAccent,
+                  ),
+                  title: Text(maps[idx]),
+                ),
+              ),
+            );
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Fechar'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = AppStateProvider.of(context);
@@ -317,28 +363,53 @@ class _RestockItem extends StatelessWidget {
                     color: isOutOfStock ? Colors.redAccent : Colors.white70,
                   ),
                 ),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.map, size: 16, color: Colors.blueAccent),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onPressed: () => _showMapInfo(context, battery, state),
+                  tooltip: 'Ver nos Mapas',
+                ),
               ],
             ),
             const SizedBox(height: 6),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: isOutOfStock
-                    ? Colors.red.withValues(alpha: 0.2)
-                    : const Color(0xFFEC4899).withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                'Repor: $canMove',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: isOutOfStock
-                      ? Colors.redAccent
-                      : const Color(0xFFEC4899),
-                  fontWeight: FontWeight.bold,
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: isOutOfStock
+                        ? Colors.red.withValues(alpha: 0.2)
+                        : const Color(0xFFEC4899).withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    'Repor: $canMove',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: isOutOfStock
+                          ? Colors.redAccent
+                          : const Color(0xFFEC4899),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
+            if (battery.notes.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                battery.notes,
+                style: const TextStyle(
+                  fontSize: 10,
+                  color: Colors.grey,
+                  fontStyle: FontStyle.italic,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
           ],
         ),
         trailing: IconButton.filledTonal(
