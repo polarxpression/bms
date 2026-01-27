@@ -672,220 +672,228 @@ class _TableMapScreenState extends State<TableMapScreen> {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Stack(
                 children: [
-                  // Header Image
-                  Container(
-                    height: 120,
-                    decoration: BoxDecoration(
-                      color: Colors.black26,
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(16),
-                      ),
-                      image: battery.imageUrl.isNotEmpty
-                          ? DecorationImage(
-                              image: NetworkImage(battery.imageUrl),
-                              fit: BoxFit.contain,
-                            )
-                          : null,
-                    ),
-                    child: battery.imageUrl.isEmpty
-                        ? const Center(
-                            child: Icon(
-                              Icons.battery_std,
-                              size: 64,
-                              color: Colors.grey,
-                            ),
-                          )
-                        : null,
-                  ),
-
-                  Padding(
-                    padding: const EdgeInsets.all(16),
+                  SingleChildScrollView(
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Text(
-                          battery.name,
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        Text(
-                          '${battery.brand} • ${battery.model}',
-                          style: const TextStyle(color: Colors.blueAccent),
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Details Grid
-                        Wrap(
-                          spacing: 16,
-                          runSpacing: 8,
-                          children: [
-                            _DetailBadge(label: 'Tipo', value: battery.type),
-                            _DetailBadge(
-                              label: 'Pack',
-                              value: 'x${battery.packSize}',
-                            ),
-                            if (battery.barcode.isNotEmpty)
-                              _DetailBadge(
-                                label: 'EAN',
-                                value: battery.barcode,
-                              ),
-                            if (linkedStock != null)
-                              _DetailBadge(
-                                label: 'Estoque (Link)',
-                                value:
-                                    '${linkedStock.quantity} (x${linkedStock.packSize})',
-                              )
-                            else
-                              _DetailBadge(
-                                label: 'Estoque',
-                                value: '${battery.quantity}',
-                              ),
-                            _DetailBadge(label: 'Local', value: '$x, $y'),
-                          ],
-                        ),
-
-                        const SizedBox(height: 16),
-                        const Text(
-                          'Qtd. Gôndola',
-                          style: TextStyle(color: Colors.grey, fontSize: 12),
-                        ),
+                        // Header Image
                         Container(
-                          margin: const EdgeInsets.only(top: 4),
-                          padding: const EdgeInsets.all(8),
+                          height: 120,
                           decoration: BoxDecoration(
                             color: Colors.black26,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.white10),
+                            image: battery.imageUrl.isNotEmpty
+                                ? DecorationImage(
+                                    image: NetworkImage(battery.imageUrl),
+                                    fit: BoxFit.contain,
+                                  )
+                                : null,
                           ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.remove_circle_outline,
-                                  color: Colors.redAccent,
-                                ),
-                                onPressed: () =>
-                                    state.adjustGondolaQuantity(battery, -1),
-                              ),
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.baseline,
-                                textBaseline: TextBaseline.alphabetic,
-                                children: [
-                                  Text(
-                                    '${battery.gondolaQuantity}',
-                                    style: const TextStyle(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                    ),
+                          child: battery.imageUrl.isEmpty
+                              ? const Center(
+                                  child: Icon(
+                                    Icons.battery_std,
+                                    size: 64,
+                                    color: Colors.grey,
                                   ),
-                                  if (battery.gondolaLimit > 0)
-                                    Text(
-                                      '/${battery.gondolaLimit}',
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.grey,
-                                      ),
+                                )
+                              : null,
+                        ),
+
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                battery.name,
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              Text(
+                                '${battery.brand} • ${battery.model}',
+                                style: const TextStyle(color: Colors.blueAccent),
+                              ),
+                              const SizedBox(height: 16),
+
+                              // Details Grid
+                              Wrap(
+                                spacing: 16,
+                                runSpacing: 8,
+                                children: [
+                                  _DetailBadge(label: 'Tipo', value: battery.type),
+                                  _DetailBadge(
+                                    label: 'Pack',
+                                    value: 'x${battery.packSize}',
+                                  ),
+                                  if (battery.barcode.isNotEmpty)
+                                    _DetailBadge(
+                                      label: 'EAN',
+                                      value: battery.barcode,
                                     ),
+                                  if (linkedStock != null)
+                                    _DetailBadge(
+                                      label: 'Estoque (Link)',
+                                      value:
+                                          '${linkedStock.quantity} (x${linkedStock.packSize})',
+                                    )
+                                  else
+                                    _DetailBadge(
+                                      label: 'Estoque',
+                                      value: '${battery.quantity}',
+                                    ),
+                                  _DetailBadge(label: 'Local', value: '$x, $y'),
                                 ],
                               ),
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.add_circle_outline,
-                                  color: Colors.greenAccent,
-                                ),
-                                onPressed: () =>
-                                    state.adjustGondolaQuantity(battery, 1),
+
+                              const SizedBox(height: 16),
+                              const Text(
+                                'Qtd. Gôndola',
+                                style: TextStyle(color: Colors.grey, fontSize: 12),
                               ),
+                              Container(
+                                margin: const EdgeInsets.only(top: 4),
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.black26,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.white10),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.remove_circle_outline,
+                                        color: Colors.redAccent,
+                                      ),
+                                      onPressed: () =>
+                                          state.adjustGondolaQuantity(battery, -1),
+                                    ),
+                                    Row(
+                                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                                      textBaseline: TextBaseline.alphabetic,
+                                      children: [
+                                        Text(
+                                          '${battery.gondolaQuantity}',
+                                          style: const TextStyle(
+                                            fontSize: 24,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                        if (battery.gondolaLimit > 0)
+                                          Text(
+                                            '/${battery.gondolaLimit}',
+                                            style: const TextStyle(
+                                              fontSize: 14,
+                                              color: Colors.grey,
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.add_circle_outline,
+                                        color: Colors.greenAccent,
+                                      ),
+                                      onPressed: () =>
+                                          state.adjustGondolaQuantity(battery, 1),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              if (battery.notes.isNotEmpty) ...[
+                                const SizedBox(height: 16),
+                                const Text(
+                                  'Notas',
+                                  style: TextStyle(color: Colors.grey, fontSize: 12),
+                                ),
+                                const SizedBox(height: 4),
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.yellowAccent.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: Colors.yellowAccent.withValues(
+                                        alpha: 0.3,
+                                      ),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    battery.notes,
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                              const SizedBox(height: 50), // Padding for corner buttons
                             ],
                           ),
                         ),
-
-                        if (battery.notes.isNotEmpty) ...[
-                          const SizedBox(height: 16),
-                          const Text(
-                            'Notas',
-                            style: TextStyle(color: Colors.grey, fontSize: 12),
-                          ),
-                          const SizedBox(height: 4),
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.yellowAccent.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: Colors.yellowAccent.withValues(
-                                  alpha: 0.3,
-                                ),
-                              ),
-                            ),
-                            child: Text(
-                              battery.notes,
-                              style: const TextStyle(
-                                color: Colors.white70,
-                                fontStyle: FontStyle.italic,
-                              ),
-                            ),
-                          ),
-                        ],
                       ],
                     ),
                   ),
 
-                  const Divider(height: 1, color: Colors.white10),
-                  Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: Wrap(
-                      alignment: WrapAlignment.end,
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(ctx),
-                          child: const Text('Fechar'),
-                        ),
-                        TextButton.icon(
-                          icon: const Icon(Icons.edit, size: 18),
-                          label: const Text('Editar'),
-                          style: TextButton.styleFrom(
-                            foregroundColor: Colors.blueAccent,
-                          ),
-                          onPressed: () {
-                            // Don't pop to keep details visible/updating behind?
-                            // Or pop?
-                            // Let's keep it.
-                            showModalBottomSheet(
-                              context: context,
-                              isScrollControlled: true,
-                              backgroundColor: Colors.transparent,
-                              builder:
-                                  (context) =>
-                                      BatteryFormScreen(batteryToEdit: battery),
-                            );
-                          },
-                        ),
-                        TextButton.icon(
-                          icon: const Icon(Icons.delete_outline, size: 18),
-                          label: const Text('Remover do Mapa'),
-                          style: TextButton.styleFrom(
-                            foregroundColor: Colors.redAccent,
-                          ),
-                          onPressed: () {
-                            state.removeBatteryFromMap(x, y);
-                            Navigator.pop(ctx);
-                          },
-                        ),
-                      ],
+                  // Close Button (Top Right)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      onPressed: () => Navigator.pop(ctx),
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.black45,
+                      ),
+                    ),
+                  ),
+
+                  // Edit Button (Bottom Left)
+                  Positioned(
+                    bottom: 8,
+                    left: 8,
+                    child: IconButton(
+                      icon: const Icon(Icons.edit, color: Colors.blueAccent),
+                      onPressed: () {
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (context) =>
+                              BatteryFormScreen(batteryToEdit: battery),
+                        );
+                      },
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.white.withValues(alpha: 0.05),
+                      ),
+                    ),
+                  ),
+
+                  // Remove Button (Bottom Right)
+                  Positioned(
+                    bottom: 8,
+                    right: 8,
+                    child: IconButton(
+                      icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                      onPressed: () {
+                        state.removeBatteryFromMap(x, y);
+                        Navigator.pop(ctx);
+                      },
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.white.withValues(alpha: 0.05),
+                      ),
                     ),
                   ),
                 ],
