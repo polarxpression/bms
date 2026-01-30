@@ -6,6 +6,7 @@ import 'package:bms/src/data/services/update_service.dart';
 import 'package:bms/ui/screens/dashboard_screen.dart';
 import 'package:bms/ui/screens/external_buy_screen.dart';
 import 'package:bms/ui/screens/inventory_screen.dart';
+import 'package:bms/ui/screens/history_screen.dart';
 import 'package:bms/ui/screens/settings_screen.dart';
 import 'package:bms/ui/screens/battery_form_screen.dart';
 import 'package:bms/ui/screens/table_map_screen.dart';
@@ -23,6 +24,7 @@ class _MainLayoutShellState extends State<MainLayoutShell> {
     ExternalBuyScreen(),
     TableMapScreen(),
     InventoryScreen(),
+    HistoryScreen(),
     SettingsScreen(),
   ];
 
@@ -49,8 +51,10 @@ class _MainLayoutShellState extends State<MainLayoutShell> {
               children: [
                 const Text('Uma nova versão está disponível para download.'),
                 const SizedBox(height: 8),
-                const Text('Notas de lançamento:',
-                    style: TextStyle(fontWeight: FontWeight.bold)),
+                const Text(
+                  'Notas de lançamento:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
                 Text(info.releaseNotes),
               ],
             ),
@@ -114,6 +118,10 @@ class _MainLayoutShellState extends State<MainLayoutShell> {
                         label: Text('Estoque'),
                       ),
                       NavigationRailDestination(
+                        icon: Icon(Icons.history_edu_outlined),
+                        label: Text('Histórico'),
+                      ),
+                      NavigationRailDestination(
                         icon: Icon(Icons.settings_outlined),
                         label: Text('Ajustes'),
                       ),
@@ -155,6 +163,10 @@ class _MainLayoutShellState extends State<MainLayoutShell> {
                     label: 'Estoque',
                   ),
                   NavigationDestination(
+                    icon: Icon(Icons.history_edu_outlined),
+                    label: 'Histórico',
+                  ),
+                  NavigationDestination(
                     icon: Icon(Icons.settings_outlined),
                     label: 'Ajustes',
                   ),
@@ -162,7 +174,7 @@ class _MainLayoutShellState extends State<MainLayoutShell> {
               ),
               floatingActionButton:
                   _currentIndex ==
-                      3 // Inventory is now index 3
+                      3 // Inventory is index 3
                   ? FloatingActionButton(
                       onPressed: () => _showForm(context),
                       child: const Icon(Icons.add),

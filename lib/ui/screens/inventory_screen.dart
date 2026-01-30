@@ -510,10 +510,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
           if (isGondola)
             Text(
               'Gôndola: ${b.gondolaQuantity}/${b.gondolaLimit} • Estoque Total: $sharedStock',
-              style: const TextStyle(
-                fontSize: 11,
-                color: Color(0xFFEC4899),
-              ),
+              style: const TextStyle(fontSize: 11, color: Color(0xFFEC4899)),
             )
           else if (b.gondolaLimit > 0)
             // Fallback for non-gondola items that might have limit set (unlikely but safe)

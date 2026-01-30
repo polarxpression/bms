@@ -45,7 +45,9 @@ class SettingsScreen extends StatelessWidget {
             leading: const Icon(Icons.cloud_upload, color: Colors.purpleAccent),
             title: const Text('Configuração de Imagens (ImgBB)'),
             subtitle: Text(
-              state.imgbbApiKey.isEmpty ? 'Não configurado' : 'Chave API Configurada',
+              state.imgbbApiKey.isEmpty
+                  ? 'Não configurado'
+                  : 'Chave API Configurada',
             ),
             trailing: const Icon(Icons.edit, color: Colors.grey),
             onTap: () {

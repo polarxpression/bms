@@ -365,7 +365,11 @@ class _RestockItem extends StatelessWidget {
                 ),
                 const Spacer(),
                 IconButton(
-                  icon: const Icon(Icons.map, size: 16, color: Colors.blueAccent),
+                  icon: const Icon(
+                    Icons.map,
+                    size: 16,
+                    color: Colors.blueAccent,
+                  ),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                   onPressed: () => _showMapInfo(context, battery, state),
@@ -377,7 +381,10 @@ class _RestockItem extends StatelessWidget {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: isOutOfStock
                         ? Colors.red.withValues(alpha: 0.2)

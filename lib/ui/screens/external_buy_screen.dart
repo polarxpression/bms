@@ -56,6 +56,11 @@ class _ExternalBuyScreenState extends State<ExternalBuyScreen> {
         title: const Text('Comprar (Reposição Externa)'),
         actions: [
           IconButton(
+            tooltip: 'Configurar Análise',
+            icon: const Icon(Icons.tune),
+            onPressed: () => _showConfigDialog(context),
+          ),
+          IconButton(
             tooltip: 'Gerar Relatório (PDF)',
             icon: const Icon(Icons.print),
             onPressed: filteredList.isEmpty
@@ -166,17 +171,26 @@ class _ExternalBuyScreenState extends State<ExternalBuyScreen> {
                           0,
                           9999,
                         );
+                        final isDynamic = b.notes.startsWith('dynamic:');
+                        final dynamicRate = isDynamic
+                            ? b.notes.split(':')[1]
+                            : '';
+
                         return Card(
                           color: const Color(0xFF141414),
                           margin: const EdgeInsets.only(bottom: 12),
                           child: ListTile(
                             leading: CircleAvatar(
-                              backgroundColor: Colors.blueAccent.withValues(
-                                alpha: 0.2,
-                              ),
-                              child: const Icon(
-                                Icons.shopping_bag,
-                                color: Colors.blueAccent,
+                              backgroundColor: isDynamic
+                                  ? Colors.purpleAccent.withOpacity(0.2)
+                                  : Colors.blueAccent.withValues(alpha: 0.2),
+                              child: Icon(
+                                isDynamic
+                                    ? Icons.auto_graph
+                                    : Icons.shopping_bag,
+                                color: isDynamic
+                                    ? Colors.purpleAccent
+                                    : Colors.blueAccent,
                               ),
                             ),
                             title: Text(
@@ -189,12 +203,30 @@ class _ExternalBuyScreenState extends State<ExternalBuyScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text('${b.brand} • ${b.type}'),
-                                Text(
-                                  'Estoque Atual: ${b.quantity} (Min: ${b.minStockThreshold})',
-                                  style: TextStyle(
-                                    color: Colors.grey[400],
-                                    fontSize: 12,
-                                  ),
+                                Row(
+                                  children: [
+                                    Text(
+                                      'Estoque: ${b.quantity}  Min: ${b.minStockThreshold}',
+                                      style: TextStyle(
+                                        color: Colors.grey[400],
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                    if (isDynamic)
+                                      Padding(
+                                        padding: const EdgeInsets.only(
+                                          left: 8.0,
+                                        ),
+                                        child: Text(
+                                          '(Consumo: ~$dynamicRate/mês)',
+                                          style: const TextStyle(
+                                            color: Colors.purpleAccent,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
                                 ),
                               ],
                             ),
@@ -204,13 +236,17 @@ class _ExternalBuyScreenState extends State<ExternalBuyScreen> {
                                 vertical: 6,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.blueAccent.withValues(alpha: 0.2),
+                                color: isDynamic
+                                    ? Colors.purpleAccent.withOpacity(0.2)
+                                    : Colors.blueAccent.withValues(alpha: 0.2),
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Text(
                                 'Comprar +$needed',
-                                style: const TextStyle(
-                                  color: Colors.blueAccent,
+                                style: TextStyle(
+                                  color: isDynamic
+                                      ? Colors.purpleAccent
+                                      : Colors.blueAccent,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -445,6 +481,56 @@ class _ExternalBuyScreenState extends State<ExternalBuyScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  void _showConfigDialog(BuildContext context) {
+    final state = AppStateProvider.of(context);
+    final controller = TextEditingController(
+      text: state.daysToAnalyze.toString(),
+    );
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Configuração de Análise'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Defina o período (em dias) para cálculo do consumo médio mensal. '
+              'O sistema usará esse valor para sugerir compras dinamicamente.',
+              style: TextStyle(fontSize: 13, color: Colors.grey),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Dias para Análise',
+                border: OutlineInputBorder(),
+                suffixText: 'dias',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final days = int.tryParse(controller.text);
+              if (days != null && days > 0) {
+                state.updateDaysToAnalyze(days);
+                Navigator.pop(ctx);
+              }
+            },
+            child: const Text('Salvar'),
+          ),
+        ],
+      ),
     );
   }
 }

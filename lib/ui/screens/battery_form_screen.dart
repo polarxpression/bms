@@ -29,10 +29,10 @@ class _BatteryFormScreenState extends State<BatteryFormScreen> {
   // NEW: Min Stock Threshold
   int _minStockThreshold = 0;
   bool _useDefaultMinStock = true;
-  
+
   // NEW: Linked Battery ID
   String? _linkedBatteryId;
-  
+
   // NEW: Upload State
   bool _isUploading = false;
 
@@ -132,7 +132,9 @@ class _BatteryFormScreenState extends State<BatteryFormScreen> {
     if (state.imgbbApiKey.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Configure a chave da API do ImgBB nas Configurações primeiro.'),
+          content: Text(
+            'Configure a chave da API do ImgBB nas Configurações primeiro.',
+          ),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -144,18 +146,23 @@ class _BatteryFormScreenState extends State<BatteryFormScreen> {
 
     if (pickedFile != null) {
       setState(() => _isUploading = true);
-      
-      final url = await ImageUploadService.uploadImage(pickedFile, state.imgbbApiKey);
-      
+
+      final url = await ImageUploadService.uploadImage(
+        pickedFile,
+        state.imgbbApiKey,
+      );
+
       if (mounted) {
         setState(() {
           _isUploading = false;
           if (url != null) {
-             _img = url;
+            _img = url;
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('Falha ao enviar imagem. Verifique sua chave API.'),
+                content: Text(
+                  'Falha ao enviar imagem. Verifique sua chave API.',
+                ),
                 backgroundColor: Colors.redAccent,
               ),
             );
@@ -272,14 +279,16 @@ class _BatteryFormScreenState extends State<BatteryFormScreen> {
                                     : null,
                               ),
                               child: _isUploading
-                                  ? const Center(child: CircularProgressIndicator())
+                                  ? const Center(
+                                      child: CircularProgressIndicator(),
+                                    )
                                   : (_img.isEmpty
-                                      ? const Icon(
-                                          Icons.add_a_photo,
-                                          size: 40,
-                                          color: Colors.grey,
-                                        )
-                                      : null),
+                                        ? const Icon(
+                                            Icons.add_a_photo,
+                                            size: 40,
+                                            color: Colors.grey,
+                                          )
+                                        : null),
                             ),
                             Container(
                               padding: const EdgeInsets.all(8),
@@ -297,7 +306,7 @@ class _BatteryFormScreenState extends State<BatteryFormScreen> {
                         ),
                       ),
                     ),
-                    
+
                     _section('Identificação'),
                     Row(
                       children: [
@@ -380,7 +389,7 @@ class _BatteryFormScreenState extends State<BatteryFormScreen> {
                       dropdownColor: const Color(0xFF27272A),
                     ),
                     const SizedBox(height: 12),
-                    
+
                     // NEW: Linked Battery (Searchable)
                     if (_currentLocation == 'Gôndola') ...[
                       GestureDetector(
@@ -390,7 +399,9 @@ class _BatteryFormScreenState extends State<BatteryFormScreen> {
                             isScrollControlled: true,
                             backgroundColor: const Color(0xFF141414),
                             shape: const RoundedRectangleBorder(
-                              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                              borderRadius: BorderRadius.vertical(
+                                top: Radius.circular(20),
+                              ),
                             ),
                             builder: (ctx) {
                               return _LinkedBatteryPicker(
@@ -410,18 +421,36 @@ class _BatteryFormScreenState extends State<BatteryFormScreen> {
                         child: InputDecorator(
                           decoration: const InputDecoration(
                             labelText: 'Vincular ao Estoque (Opcional)',
-                            helperText: 'Toque para selecionar produto do estoque',
+                            helperText:
+                                'Toque para selecionar produto do estoque',
                             prefixIcon: Icon(Icons.link),
                             suffixIcon: Icon(Icons.arrow_drop_down),
                           ),
                           child: Text(
                             _linkedBatteryId == null
                                 ? 'Sem vínculo (Nenhum)'
-                                : (stockBatteries.firstWhere((b) => b.id == _linkedBatteryId, orElse: () => Battery(id: '', name: 'Desconhecido', type: '', brand: '', model: '', barcode: '', quantity: 0, purchaseDate: DateTime.now(), lastChanged: DateTime.now())).name),
+                                : (stockBatteries
+                                      .firstWhere(
+                                        (b) => b.id == _linkedBatteryId,
+                                        orElse: () => Battery(
+                                          id: '',
+                                          name: 'Desconhecido',
+                                          type: '',
+                                          brand: '',
+                                          model: '',
+                                          barcode: '',
+                                          quantity: 0,
+                                          purchaseDate: DateTime.now(),
+                                          lastChanged: DateTime.now(),
+                                        ),
+                                      )
+                                      .name),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              color: _linkedBatteryId == null ? Colors.grey : Colors.white,
+                              color: _linkedBatteryId == null
+                                  ? Colors.grey
+                                  : Colors.white,
                             ),
                           ),
                         ),
@@ -482,8 +511,7 @@ class _BatteryFormScreenState extends State<BatteryFormScreen> {
                           initialValue: _minStockThreshold.toString(),
                           decoration: const InputDecoration(
                             labelText: 'Estoque Mínimo Personalizado',
-                            helperText:
-                                'Defina 0 para "Nenhum" (não alertar).',
+                            helperText: 'Defina 0 para "Nenhum" (não alertar).',
                           ),
                           keyboardType: TextInputType.number,
                           onSaved: (v) =>
@@ -629,147 +657,146 @@ class _BatteryFormScreenState extends State<BatteryFormScreen> {
     } else {
       state.updateBattery(bat);
     }
-        Navigator.pop(context);
-      }
-    }
-    
-    class _LinkedBatteryPicker extends StatefulWidget {
-      final List<Battery> batteries;
-      final Function(String) onSelected;
-      final VoidCallback onClear;
-    
-      const _LinkedBatteryPicker({
-        required this.batteries,
-        required this.onSelected,
-        required this.onClear,
-      });
-    
-      @override
-      State<_LinkedBatteryPicker> createState() => _LinkedBatteryPickerState();
-    }
-    
-    class _LinkedBatteryPickerState extends State<_LinkedBatteryPicker> {
-      String _query = '';
-      final TextEditingController _searchController = TextEditingController();
-    
-      @override
-      void dispose() {
-        _searchController.dispose();
-        super.dispose();
-      }
-    
-      @override
-      Widget build(BuildContext context) {
-        final filtered = widget.batteries.where((b) {
-          return SearchQueryParser.matches(b, _query);
-        }).toList();
-    
-        return Container(
-          padding: EdgeInsets.only(
-            left: 16,
-            right: 16,
-            top: 16,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+    Navigator.pop(context);
+  }
+}
+
+class _LinkedBatteryPicker extends StatefulWidget {
+  final List<Battery> batteries;
+  final Function(String) onSelected;
+  final VoidCallback onClear;
+
+  const _LinkedBatteryPicker({
+    required this.batteries,
+    required this.onSelected,
+    required this.onClear,
+  });
+
+  @override
+  State<_LinkedBatteryPicker> createState() => _LinkedBatteryPickerState();
+}
+
+class _LinkedBatteryPickerState extends State<_LinkedBatteryPicker> {
+  String _query = '';
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final filtered = widget.batteries.where((b) {
+      return SearchQueryParser.matches(b, _query);
+    }).toList();
+
+    return Container(
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 16,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+      ),
+      height: MediaQuery.of(context).size.height * 0.7,
+      child: Column(
+        children: [
+          const Text(
+            'Vincular ao Estoque',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
           ),
-          height: MediaQuery.of(context).size.height * 0.7,
-          child: Column(
-            children: [
-              const Text(
-                'Vincular ao Estoque',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _searchController,
+            onChanged: (v) => setState(() => _query = v),
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              hintText: 'Procurar no estoque...',
+              hintStyle: const TextStyle(color: Colors.grey),
+              prefixIcon: const Icon(Icons.search, color: Colors.blueAccent),
+              suffixIcon: _query.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, color: Colors.grey),
+                      onPressed: () {
+                        setState(() => _query = '');
+                        _searchController.clear();
+                      },
+                    )
+                  : null,
+              filled: true,
+              fillColor: Colors.white.withValues(alpha: 0.05),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
               ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _searchController,
-                onChanged: (v) => setState(() => _query = v),
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  hintText: 'Procurar no estoque...',
-                  hintStyle: const TextStyle(color: Colors.grey),
-                  prefixIcon: const Icon(Icons.search, color: Colors.blueAccent),
-                  suffixIcon: _query.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear, color: Colors.grey),
-                          onPressed: () {
-                            setState(() => _query = '');
-                            _searchController.clear();
-                          },
-                        )
-                      : null,
-                  filled: true,
-                  fillColor: Colors.white.withValues(alpha: 0.05),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 10),
-              ListTile(
-                leading: const Icon(Icons.link_off, color: Colors.redAccent),
-                title: const Text(
-                  'Remover Vínculo',
-                  style: TextStyle(color: Colors.redAccent),
-                ),
-                onTap: widget.onClear,
-              ),
-              const Divider(height: 1, color: Colors.white10),
-              Expanded(
-                child: filtered.isEmpty
-                    ? Center(
-                        child: Text(
-                          _query.isEmpty
-                              ? 'Nenhum item de estoque disponível.'
-                              : 'Nenhum resultado para "$_query"',
-                          style: const TextStyle(color: Colors.grey),
+            ),
+          ),
+          const SizedBox(height: 10),
+          ListTile(
+            leading: const Icon(Icons.link_off, color: Colors.redAccent),
+            title: const Text(
+              'Remover Vínculo',
+              style: TextStyle(color: Colors.redAccent),
+            ),
+            onTap: widget.onClear,
+          ),
+          const Divider(height: 1, color: Colors.white10),
+          Expanded(
+            child: filtered.isEmpty
+                ? Center(
+                    child: Text(
+                      _query.isEmpty
+                          ? 'Nenhum item de estoque disponível.'
+                          : 'Nenhum resultado para "$_query"',
+                      style: const TextStyle(color: Colors.grey),
+                    ),
+                  )
+                : ListView.builder(
+                    itemCount: filtered.length,
+                    itemBuilder: (ctx, idx) {
+                      final b = filtered[idx];
+                      return ListTile(
+                        leading: b.imageUrl.isNotEmpty
+                            ? Image.network(
+                                b.imageUrl,
+                                width: 30,
+                                height: 30,
+                                errorBuilder: (_, __, ___) => const Icon(
+                                  Icons.battery_std,
+                                  color: Colors.grey,
+                                ),
+                              )
+                            : const Icon(Icons.battery_std, color: Colors.grey),
+                        title: Text(
+                          b.name,
+                          style: const TextStyle(color: Colors.white),
                         ),
-                      )
-                    : ListView.builder(
-                        itemCount: filtered.length,
-                        itemBuilder: (ctx, idx) {
-                          final b = filtered[idx];
-                          return ListTile(
-                            leading: b.imageUrl.isNotEmpty
-                                ? Image.network(
-                                    b.imageUrl,
-                                    width: 30,
-                                    height: 30,
-                                    errorBuilder: (_, __, ___) => const Icon(
-                                      Icons.battery_std,
-                                      color: Colors.grey,
-                                    ),
-                                  )
-                                : const Icon(Icons.battery_std, color: Colors.grey),
-                            title: Text(
-                              b.name,
-                              style: const TextStyle(color: Colors.white),
-                            ),
-                            subtitle: Text(
-                              '${b.brand} • ${b.model} • ${b.type} • x${b.packSize}',
-                              style: const TextStyle(
-                                color: Colors.grey,
-                                fontSize: 12,
-                              ),
-                            ),
-                            trailing: Text(
-                              'Qtd: ${b.quantity}',
-                              style: const TextStyle(
-                                color: Colors.blueAccent,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            onTap: () => widget.onSelected(b.id),
-                          );
-                        },
-                      ),
-              ),
-            ],
+                        subtitle: Text(
+                          '${b.brand} • ${b.model} • ${b.type} • x${b.packSize}',
+                          style: const TextStyle(
+                            color: Colors.grey,
+                            fontSize: 12,
+                          ),
+                        ),
+                        trailing: Text(
+                          'Qtd: ${b.quantity}',
+                          style: const TextStyle(
+                            color: Colors.blueAccent,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        onTap: () => widget.onSelected(b.id),
+                      );
+                    },
+                  ),
           ),
-        );
-      }
-    }
-    
+        ],
+      ),
+    );
+  }
+}

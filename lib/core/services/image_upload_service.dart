@@ -6,7 +6,7 @@ class ImageUploadService {
   static const String _baseUrl = 'https://api.imgbb.com/1/upload';
 
   /// Uploads an image to ImgBB and returns the URL.
-  /// 
+  ///
   /// [imageFile] is the file picked by ImagePicker.
   /// [apiKey] is the ImgBB API key.
   static Future<String?> uploadImage(XFile imageFile, String apiKey) async {

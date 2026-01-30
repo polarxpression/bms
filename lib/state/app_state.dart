@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:diacritic/diacritic.dart';
 import 'package:bms/core/models/battery.dart';
 import 'package:bms/core/models/battery_map.dart';
+import 'package:bms/core/models/history_entry.dart';
 
 class AppState extends ChangeNotifier {
   List<Battery> _batteries = [];
@@ -19,10 +20,13 @@ class AppState extends ChangeNotifier {
       .collection('settings');
   final CollectionReference _mapsCollection = FirebaseFirestore.instance
       .collection('maps');
+  final CollectionReference _historyCollection = FirebaseFirestore.instance
+      .collection('history');
 
   // Settings
   int _defaultGondolaCapacity = 20;
   int _defaultMinStockThreshold = 10;
+  int _daysToAnalyze = 90; // Default days for analysis
   String _imgbbApiKey = ''; // NEW
 
   // Maps Data
@@ -30,13 +34,19 @@ class AppState extends ChangeNotifier {
   String? _currentMapId;
   Map<String, String> _batteryMap = {}; // Cells of current map
 
+  // Analysis Data
+  Map<String, double> _monthlyConsumption = {}; // BatteryId -> Avg Qty/Month
+
   List<Battery> get batteries => List.unmodifiable(_batteries);
   bool get isLoading => _isLoading;
   int get defaultGondolaCapacity => _defaultGondolaCapacity;
   int get defaultMinStockThreshold => _defaultMinStockThreshold;
+  int get daysToAnalyze => _daysToAnalyze;
   String get imgbbApiKey => _imgbbApiKey; // NEW
   Map<String, String> get batteryMap => Map.unmodifiable(_batteryMap);
   List<BatteryMap> get maps => List.unmodifiable(_maps);
+  Map<String, double> get monthlyConsumption =>
+      Map.unmodifiable(_monthlyConsumption);
   BatteryMap? get currentMap => _maps.isEmpty || _currentMapId == null
       ? null
       : _maps.firstWhere(
@@ -62,6 +72,15 @@ class AppState extends ChangeNotifier {
     await _settingsCollection.doc('config').set({
       'defaultMinStockThreshold': newThreshold,
     }, SetOptions(merge: true));
+  }
+
+  Future<void> updateDaysToAnalyze(int days) async {
+    _daysToAnalyze = days;
+    notifyListeners();
+    await _settingsCollection.doc('config').set({
+      'daysToAnalyze': days,
+    }, SetOptions(merge: true));
+    refreshAnalysis();
   }
 
   Future<void> updateImgbbApiKey(String key) async {
@@ -95,10 +114,17 @@ class AppState extends ChangeNotifier {
             if (data.containsKey('defaultMinStockThreshold')) {
               _defaultMinStockThreshold = data['defaultMinStockThreshold'];
             }
+            if (data.containsKey('daysToAnalyze')) {
+              _daysToAnalyze = data['daysToAnalyze'];
+            }
             if (data.containsKey('imgbbApiKey')) {
               _imgbbApiKey = data['imgbbApiKey'];
             }
             notifyListeners();
+            // Trigger analysis when batteries are loaded or settings change
+            if (_batteries.isNotEmpty) {
+              refreshAnalysis();
+            }
           }
         });
 
@@ -253,7 +279,13 @@ class AppState extends ChangeNotifier {
       if (data.containsKey('defaultMinStockThreshold')) {
         _defaultMinStockThreshold = data['defaultMinStockThreshold'];
       }
+      if (data.containsKey('daysToAnalyze')) {
+        _daysToAnalyze = data['daysToAnalyze'];
+      }
     }
+
+    // Refresh Analysis
+    refreshAnalysis();
 
     // Refresh Maps List
     final mapsSnapshot = await _mapsCollection.get();
@@ -279,6 +311,82 @@ class AppState extends ChangeNotifier {
       _batteryMap = newMap;
     }
 
+    notifyListeners();
+  }
+
+  // History & Analysis
+  Future<void> logHistory({
+    required String batteryId,
+    required String batteryName,
+    required String type, // 'in' or 'out'
+    required String location, // 'stock' or 'gondola'
+    required int quantity,
+    required String reason,
+  }) async {
+    if (quantity == 0) return;
+    final entry = HistoryEntry(
+      id: '', // Auto-gen
+      batteryId: batteryId,
+      batteryName: batteryName,
+      type: type,
+      location: location,
+      quantity: quantity,
+      timestamp: DateTime.now(),
+      reason: reason,
+    );
+    await _historyCollection.add(entry.toMap());
+  }
+
+  Future<void> refreshAnalysis() async {
+    if (_batteries.isEmpty) return;
+
+    final cutoff = DateTime.now().subtract(Duration(days: _daysToAnalyze));
+
+    // Fetch OUT history for the last X days
+    final snapshot = await _historyCollection
+        .where('type', isEqualTo: 'out')
+        .where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(cutoff))
+        .get();
+
+    final Map<String, int> totalOuts = {};
+
+    for (var doc in snapshot.docs) {
+      final data = doc.data() as Map<String, dynamic>;
+      final qty = data['quantity'] as int? ?? 0;
+      final bid = data['batteryId'] as String? ?? '';
+
+      // We only care about consumption (Sales/Usage), not transfers
+      // Transfers usually show as 'out' from Stock with reason 'restock'
+      // Adjustments can be 'adjustment'
+      final reason = data['reason'] as String? ?? '';
+
+      // If reason is 'restock', it means it moved to Gondola, NOT sold yet.
+      // Real consumption is usually from Gondola (reason 'sale' or 'usage' or 'adjustment' if negative)
+      // Or from Stock if direct sale.
+      // Let's assume 'restock' is internal transfer.
+      if (reason == 'restock') continue;
+
+      if (bid.isNotEmpty) {
+        totalOuts[bid] = (totalOuts[bid] ?? 0) + qty;
+      }
+    }
+
+    final Map<String, double> newConsumption = {};
+    // Calculate Monthly Rate
+    // If we analyze 90 days, monthly rate = total / 3
+    final months = _daysToAnalyze / 30.0;
+    if (months <= 0) return;
+
+    // We need to map battery IDs to their "Group" (Barcode) because external buy is grouped
+    // Actually, `externalBuyBatteries` groups them.
+    // We can just store per batteryId and aggregate later, OR aggregate here.
+    // Storing per batteryId is more flexible.
+
+    totalOuts.forEach((bid, qty) {
+      newConsumption[bid] = qty / months;
+    });
+
+    _monthlyConsumption = newConsumption;
     notifyListeners();
   }
 
@@ -389,15 +497,15 @@ class AppState extends ChangeNotifier {
 
   Future<List<String>> findBatteryInMaps(String batteryId) async {
     final List<String> results = [];
-    
+
     // Check current in-memory map first for speed
     if (_currentMapId != null && _batteryMap.containsValue(batteryId)) {
-       // We know it's in current map, but we want to know exact cell count or just presence?
-       // The UI just lists map names.
-       final current = currentMap;
-       if (current != null) {
-         results.add('${current.name} (${current.purpose})');
-       }
+      // We know it's in current map, but we want to know exact cell count or just presence?
+      // The UI just lists map names.
+      final current = currentMap;
+      if (current != null) {
+        results.add('${current.name} (${current.purpose})');
+      }
     }
 
     // Iterate all maps to check their cells collection
@@ -406,7 +514,7 @@ class AppState extends ChangeNotifier {
       // If we already found it in current map, skip querying it again if you want unique names
       // But let's just query to be safe and consistent, or skip if matched.
       // Actually, let's just query all to be sure.
-      
+
       try {
         final query = await _mapsCollection
             .doc(map.id)
@@ -425,7 +533,7 @@ class AppState extends ChangeNotifier {
         // Ignore error for this map
       }
     }
-    
+
     return results;
   }
 
@@ -547,6 +655,8 @@ class AppState extends ChangeNotifier {
 
       Battery primary = items.first;
 
+      double groupMonthlyConsumption = 0;
+
       for (var b in items) {
         // Only count stock from non-gondola items to match restock logic
         final isGondola =
@@ -558,6 +668,9 @@ class AppState extends ChangeNotifier {
 
         // Sum Gondola Quantities
         totalGondola += b.gondolaQuantity;
+
+        // Sum Consumption
+        groupMonthlyConsumption += _monthlyConsumption[b.id] ?? 0;
 
         if (!b.useDefaultMinStock) {
           anyManual = true;
@@ -575,10 +688,23 @@ class AppState extends ChangeNotifier {
         }
       }
 
-      final effectiveThreshold = anyManual
+      int effectiveThreshold = anyManual
           ? maxManualThreshold
           : _defaultMinStockThreshold;
-      
+
+      // DYNAMIC BUY LOGIC:
+      // If consumption suggests we need more, increase threshold.
+      // Target: Maintain 1 month of stock based on recent consumption.
+      // Or 1.5 months? Let's use 1 month for now or make it configurable?
+      // Defaulting to 1 month cover.
+      final dynamicThreshold = groupMonthlyConsumption.ceil();
+      bool isDynamic = false;
+
+      if (dynamicThreshold > effectiveThreshold) {
+        effectiveThreshold = dynamicThreshold;
+        isDynamic = true;
+      }
+
       // final effectiveGondolaLimit = maxGondolaLimit > 0 ? maxGondolaLimit : _defaultGondolaCapacity;
 
       bool shouldAdd = false;
@@ -590,7 +716,7 @@ class AppState extends ChangeNotifier {
 
       // Special case: If user set manual threshold to 0, they likely want to DISABLE the alert.
       // So if anyManual is true and effectiveThreshold is 0, we SKIP adding it.
-      if (anyManual && effectiveThreshold == 0) {
+      if (anyManual && effectiveThreshold == 0 && !isDynamic) {
         shouldAdd = false;
       } else if (stockToCheck <= effectiveThreshold) {
         shouldAdd = true;
@@ -610,8 +736,13 @@ class AppState extends ChangeNotifier {
                 stockToCheck, // VISUAL: Effective Stock used for decision (Stock or Gondola fallback)
             gondolaQuantity: totalGondola,
             location: primary.location,
-            minStockThreshold: effectiveThreshold, // VISUAL: Target Threshold
+            minStockThreshold:
+                effectiveThreshold, // VISUAL: Target Threshold (Dynamic or Static)
             useDefaultMinStock: !anyManual, // VISUAL
+            // Hack: Use 'notes' to pass metadata to UI about dynamic nature
+            notes: isDynamic
+                ? 'dynamic:${groupMonthlyConsumption.toStringAsFixed(1)}'
+                : '',
             gondolaLimit: maxGondolaLimit > 0
                 ? maxGondolaLimit
                 : _defaultGondolaCapacity,
@@ -626,23 +757,132 @@ class AppState extends ChangeNotifier {
     return buyList;
   }
 
-  Future<void> addBattery(Battery battery) async =>
-      await _collection.add(battery.toMap());
-  Future<void> updateBattery(Battery updated) async =>
-      await _collection.doc(updated.id).update(updated.toMap());
+  Future<List<HistoryEntry>> fetchHistory({
+    DateTime? start,
+    DateTime? end,
+    String? batteryId,
+  }) async {
+    Query query = _historyCollection.orderBy('timestamp', descending: true);
+
+    if (start != null) {
+      query = query.where(
+        'timestamp',
+        isGreaterThanOrEqualTo: Timestamp.fromDate(start),
+      );
+    }
+    if (end != null) {
+      query = query.where(
+        'timestamp',
+        isLessThanOrEqualTo: Timestamp.fromDate(end),
+      );
+    }
+    if (batteryId != null) {
+      query = query.where('batteryId', isEqualTo: batteryId);
+    }
+
+    final snapshot = await query.get();
+    return snapshot.docs
+        .map(
+          (doc) =>
+              HistoryEntry.fromMap(doc.data() as Map<String, dynamic>, doc.id),
+        )
+        .toList();
+  }
+
+  Future<void> addBattery(Battery battery) async {
+    final docRef = await _collection.add(battery.toMap());
+    // Log Initial Stock
+    if (battery.quantity > 0) {
+      await logHistory(
+        batteryId: docRef.id,
+        batteryName: battery.name,
+        type: 'in',
+        location: 'stock',
+        quantity: battery.quantity,
+        reason: 'initial_stock',
+      );
+    }
+    if (battery.gondolaQuantity > 0) {
+      await logHistory(
+        batteryId: docRef.id,
+        batteryName: battery.name,
+        type: 'in',
+        location: 'gondola',
+        quantity: battery.gondolaQuantity,
+        reason: 'initial_stock',
+      );
+    }
+  }
+
+  Future<void> updateBattery(Battery updated) async {
+    // Find old to compare
+    final old = _batteries.firstWhere(
+      (b) => b.id == updated.id,
+      orElse: () => updated,
+    );
+
+    await _collection.doc(updated.id).update(updated.toMap());
+
+    // Check Stock Change
+    final stockDelta = updated.quantity - old.quantity;
+    if (stockDelta != 0) {
+      await logHistory(
+        batteryId: updated.id,
+        batteryName: updated.name,
+        type: stockDelta > 0 ? 'in' : 'out',
+        location: 'stock',
+        quantity: stockDelta.abs(),
+        reason: 'edit_form',
+      );
+    }
+
+    // Check Gondola Change
+    final gondolaDelta = updated.gondolaQuantity - old.gondolaQuantity;
+    if (gondolaDelta != 0) {
+      await logHistory(
+        batteryId: updated.id,
+        batteryName: updated.name,
+        type: gondolaDelta > 0 ? 'in' : 'out',
+        location: 'gondola',
+        quantity: gondolaDelta.abs(),
+        reason: 'edit_form',
+      );
+    }
+  }
+
   Future<void> deleteBattery(String id) async =>
       await _collection.doc(id).delete();
 
-  Future<void> adjustQuantity(Battery battery, int delta) async {
+  Future<void> adjustQuantity(
+    Battery battery,
+    int delta, {
+    String reason = 'adjustment',
+  }) async {
     final newQty = (battery.quantity + delta).clamp(0, 9999);
     await _collection.doc(battery.id).update({
       'quantity': newQty,
       'lastChanged': Timestamp.now(),
     });
+
+    // Log History
+    if (delta != 0) {
+      await logHistory(
+        batteryId: battery.id,
+        batteryName: battery.name,
+        type: delta > 0 ? 'in' : 'out',
+        location: 'stock',
+        quantity: delta.abs(),
+        reason: reason,
+      );
+    }
   }
 
   // NEW: Adjust gondola quantity
-  Future<void> adjustGondolaQuantity(Battery battery, int delta) async {
+  Future<void> adjustGondolaQuantity(
+    Battery battery,
+    int delta, {
+    String reason = 'adjustment',
+  }) async {
     final limit = battery.gondolaLimit > 0
         ? battery.gondolaLimit
         : _defaultGondolaCapacity;
@@ -651,6 +891,18 @@ class AppState extends ChangeNotifier {
       'gondolaQuantity': newQty,
       'lastChanged': Timestamp.now(),
     });
+
+    // Log History
+    if (delta != 0) {
+      await logHistory(
+        batteryId: battery.id,
+        batteryName: battery.name,
+        type: delta > 0 ? 'in' : 'out',
+        location: 'gondola',
+        quantity: delta.abs(),
+        reason: reason,
+      );
+    }
   }
 
   // FIXED: Move to gondola - transfers from stock to gondola with safety checks
@@ -711,6 +963,16 @@ class AppState extends ChangeNotifier {
       'lastChanged': Timestamp.now(),
     });
 
+    // Log IN Gondola (Restock)
+    await logHistory(
+      batteryId: realBattery.id,
+      batteryName: realBattery.name,
+      type: 'in',
+      location: 'gondola',
+      quantity: safeAmount,
+      reason: 'restock',
+    );
+
     // 4. Deduct Stock (Distributed)
     // First try to take from the target itself
     int remainingToDeduct = safeAmount;
@@ -722,6 +984,17 @@ class AppState extends ChangeNotifier {
       await _collection.doc(realBattery.id).update({
         'quantity': realBattery.quantity - deduct,
       });
+
+      // Log OUT Stock (Restock)
+      await logHistory(
+        batteryId: realBattery.id,
+        batteryName: realBattery.name,
+        type: 'out',
+        location: 'stock',
+        quantity: deduct,
+        reason: 'restock',
+      );
+
       remainingToDeduct -= deduct;
     }
 
@@ -741,6 +1014,17 @@ class AppState extends ChangeNotifier {
               ? remainingToDeduct
               : s.quantity;
           await _collection.doc(s.id).update({'quantity': s.quantity - deduct});
+
+          // Log OUT Stock (Restock from Sibling)
+          await logHistory(
+            batteryId: s.id,
+            batteryName: s.name,
+            type: 'out',
+            location: 'stock',
+            quantity: deduct,
+            reason: 'restock',
+          );
+
           remainingToDeduct -= deduct;
         }
       }

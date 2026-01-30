@@ -719,7 +719,9 @@ class _TableMapScreenState extends State<TableMapScreen> {
                               ),
                               Text(
                                 '${battery.brand} • ${battery.model}',
-                                style: const TextStyle(color: Colors.blueAccent),
+                                style: const TextStyle(
+                                  color: Colors.blueAccent,
+                                ),
                               ),
                               const SizedBox(height: 16),
 
@@ -728,7 +730,10 @@ class _TableMapScreenState extends State<TableMapScreen> {
                                 spacing: 16,
                                 runSpacing: 8,
                                 children: [
-                                  _DetailBadge(label: 'Tipo', value: battery.type),
+                                  _DetailBadge(
+                                    label: 'Tipo',
+                                    value: battery.type,
+                                  ),
                                   _DetailBadge(
                                     label: 'Pack',
                                     value: 'x${battery.packSize}',
@@ -756,7 +761,10 @@ class _TableMapScreenState extends State<TableMapScreen> {
                               const SizedBox(height: 16),
                               const Text(
                                 'Qtd. Gôndola',
-                                style: TextStyle(color: Colors.grey, fontSize: 12),
+                                style: TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: 12,
+                                ),
                               ),
                               Container(
                                 margin: const EdgeInsets.only(top: 4),
@@ -767,18 +775,20 @@ class _TableMapScreenState extends State<TableMapScreen> {
                                   border: Border.all(color: Colors.white10),
                                 ),
                                 child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     IconButton(
                                       icon: const Icon(
                                         Icons.remove_circle_outline,
                                         color: Colors.redAccent,
                                       ),
-                                      onPressed: () =>
-                                          state.adjustGondolaQuantity(battery, -1),
+                                      onPressed: () => state
+                                          .adjustGondolaQuantity(battery, -1),
                                     ),
                                     Row(
-                                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.baseline,
                                       textBaseline: TextBaseline.alphabetic,
                                       children: [
                                         Text(
@@ -804,8 +814,8 @@ class _TableMapScreenState extends State<TableMapScreen> {
                                         Icons.add_circle_outline,
                                         color: Colors.greenAccent,
                                       ),
-                                      onPressed: () =>
-                                          state.adjustGondolaQuantity(battery, 1),
+                                      onPressed: () => state
+                                          .adjustGondolaQuantity(battery, 1),
                                     ),
                                   ],
                                 ),
@@ -815,14 +825,19 @@ class _TableMapScreenState extends State<TableMapScreen> {
                                 const SizedBox(height: 16),
                                 const Text(
                                   'Notas',
-                                  style: TextStyle(color: Colors.grey, fontSize: 12),
+                                  style: TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 12,
+                                  ),
                                 ),
                                 const SizedBox(height: 4),
                                 Container(
                                   width: double.infinity,
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
-                                    color: Colors.yellowAccent.withValues(alpha: 0.1),
+                                    color: Colors.yellowAccent.withValues(
+                                      alpha: 0.1,
+                                    ),
                                     borderRadius: BorderRadius.circular(8),
                                     border: Border.all(
                                       color: Colors.yellowAccent.withValues(
@@ -839,7 +854,9 @@ class _TableMapScreenState extends State<TableMapScreen> {
                                   ),
                                 ),
                               ],
-                              const SizedBox(height: 50), // Padding for corner buttons
+                              const SizedBox(
+                                height: 50,
+                              ), // Padding for corner buttons
                             ],
                           ),
                         ),
@@ -886,7 +903,10 @@ class _TableMapScreenState extends State<TableMapScreen> {
                     bottom: 8,
                     right: 8,
                     child: IconButton(
-                      icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                      icon: const Icon(
+                        Icons.delete_outline,
+                        color: Colors.redAccent,
+                      ),
                       onPressed: () {
                         state.removeBatteryFromMap(x, y);
                         Navigator.pop(ctx);
