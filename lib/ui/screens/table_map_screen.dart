@@ -784,7 +784,11 @@ class _TableMapScreenState extends State<TableMapScreen> {
                                         color: Colors.redAccent,
                                       ),
                                       onPressed: () => state
-                                          .adjustGondolaQuantity(battery, -1),
+                                          .adjustGondolaQuantity(
+                                            battery,
+                                            -1,
+                                            source: 'map',
+                                          ),
                                     ),
                                     Row(
                                       crossAxisAlignment:
@@ -815,7 +819,11 @@ class _TableMapScreenState extends State<TableMapScreen> {
                                         color: Colors.greenAccent,
                                       ),
                                       onPressed: () => state
-                                          .adjustGondolaQuantity(battery, 1),
+                                          .adjustGondolaQuantity(
+                                            battery,
+                                            1,
+                                            source: 'map',
+                                          ),
                                     ),
                                   ],
                                 ),

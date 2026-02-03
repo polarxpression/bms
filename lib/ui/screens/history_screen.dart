@@ -133,7 +133,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   );
                 }
 
-                final entries = snapshot.data ?? [];
+                final entries = (snapshot.data ?? []).where((entry) {
+                  // Requirement: "On the history, the out should only be counted if the battery is modified via the map"
+                  if (entry.type == 'out' && entry.source != 'map') {
+                    return false;
+                  }
+                  return true;
+                }).toList();
+
                 if (entries.isEmpty) {
                   return const Center(
                     child: Text('Nenhum registro encontrado no período.'),

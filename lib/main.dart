@@ -3,10 +3,12 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:bms/firebase_options.dart';
 import 'package:bms/state/app_state.dart';
 import 'package:bms/ui/main_layout.dart';
+import 'package:bms/core/services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await NotificationService().init();
   runApp(const BMSApp());
 }
 

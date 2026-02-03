@@ -5,6 +5,7 @@ import 'package:diacritic/diacritic.dart';
 import 'package:bms/core/models/battery.dart';
 import 'package:bms/core/models/battery_map.dart';
 import 'package:bms/core/models/history_entry.dart';
+import 'package:bms/core/models/app_notification.dart';
 
 class AppState extends ChangeNotifier {
   List<Battery> _batteries = [];
@@ -12,6 +13,7 @@ class AppState extends ChangeNotifier {
   StreamSubscription<QuerySnapshot>? _subscription;
   StreamSubscription<DocumentSnapshot>? _settingsSubscription;
   StreamSubscription<QuerySnapshot>? _cellsSubscription;
+  StreamSubscription<QuerySnapshot>? _notificationsSubscription;
 
   final CollectionReference _collection = FirebaseFirestore.instance.collection(
     'batteries',
@@ -22,6 +24,9 @@ class AppState extends ChangeNotifier {
       .collection('maps');
   final CollectionReference _historyCollection = FirebaseFirestore.instance
       .collection('history');
+  final CollectionReference _notificationsCollection = FirebaseFirestore
+      .instance
+      .collection('notifications');
 
   // Settings
   int _defaultGondolaCapacity = 20;
@@ -37,6 +42,9 @@ class AppState extends ChangeNotifier {
   // Analysis Data
   Map<String, double> _monthlyConsumption = {}; // BatteryId -> Avg Qty/Month
 
+  // Notifications Data
+  List<AppNotification> _notifications = [];
+
   List<Battery> get batteries => List.unmodifiable(_batteries);
   bool get isLoading => _isLoading;
   int get defaultGondolaCapacity => _defaultGondolaCapacity;
@@ -47,6 +55,10 @@ class AppState extends ChangeNotifier {
   List<BatteryMap> get maps => List.unmodifiable(_maps);
   Map<String, double> get monthlyConsumption =>
       Map.unmodifiable(_monthlyConsumption);
+  List<AppNotification> get notifications => List.unmodifiable(_notifications);
+  int get unreadNotificationsCount =>
+      _notifications.where((n) => !n.isRead).length;
+
   BatteryMap? get currentMap => _maps.isEmpty || _currentMapId == null
       ? null
       : _maps.firstWhere(
@@ -56,39 +68,85 @@ class AppState extends ChangeNotifier {
 
   AppState() {
     _initRealtimeUpdates();
+    _checkScheduledNotifications();
   }
 
-  Future<void> updateDefaultCapacity(int newCap) async {
-    _defaultGondolaCapacity = newCap;
-    notifyListeners();
-    await _settingsCollection.doc('config').set({
-      'defaultGondolaCapacity': newCap,
-    }, SetOptions(merge: true));
+  Future<void> _checkScheduledNotifications() async {
+    final now = DateTime.now();
+    // Monday = 1
+    if (now.weekday == DateTime.monday) {
+      final todayStr = '${now.year}-${now.month}-${now.day}';
+
+      // Check last run from settings/local storage (using Firestore config for persistence across devices/restarts)
+      final configDoc = await _settingsCollection
+          .doc('notifications_run')
+          .get();
+      final data = configDoc.exists
+          ? configDoc.data() as Map<String, dynamic>
+          : {};
+
+      final lastWeeklyRun = data['lastWeeklyRun'] as String?;
+      final lastMonthlyRun = data['lastMonthlyRun'] as String?;
+
+      // 1. Weekly Map Update (Every Monday)
+      if (lastWeeklyRun != todayStr) {
+        await addNotification(
+          title: 'Atualizar Mapa',
+          message: 'Lembrete semanal: Por favor, atualize o mapa de baterias.',
+          type: 'reminder',
+        );
+        await _settingsCollection.doc('notifications_run').set({
+          'lastWeeklyRun': todayStr,
+        }, SetOptions(merge: true));
+      }
+
+      // 2. Monthly Buy (1st Monday of Month)
+      // Check if this is the first Monday of the month
+      // If day is <= 7, it's the first occurrence of this weekday in the month
+      if (now.day <= 7) {
+        // Construct a unique key for this month's run: YYYY-MM
+        final monthKey = '${now.year}-${now.month}';
+        if (lastMonthlyRun != monthKey) {
+          await addNotification(
+            title: 'Comprar Baterias',
+            message:
+                'Primeira segunda-feira do mês. Verifique o estoque e faça compras se necessário.',
+            type: 'reminder',
+          );
+          await _settingsCollection.doc('notifications_run').set({
+            'lastMonthlyRun': monthKey,
+          }, SetOptions(merge: true));
+        }
+      }
+    }
   }
 
-  Future<void> updateDefaultMinStockThreshold(int newThreshold) async {
-    _defaultMinStockThreshold = newThreshold;
-    notifyListeners();
-    await _settingsCollection.doc('config').set({
-      'defaultMinStockThreshold': newThreshold,
-    }, SetOptions(merge: true));
+  Future<void> addNotification({
+    required String title,
+    required String message,
+    String? type,
+    String? actionUrl,
+  }) async {
+    await _notificationsCollection.add({
+      'title': title,
+      'message': message,
+      'timestamp': FieldValue.serverTimestamp(),
+      'isRead': false,
+      'type': type,
+      'actionUrl': actionUrl,
+    });
   }
 
-  Future<void> updateDaysToAnalyze(int days) async {
-    _daysToAnalyze = days;
-    notifyListeners();
-    await _settingsCollection.doc('config').set({
-      'daysToAnalyze': days,
-    }, SetOptions(merge: true));
-    refreshAnalysis();
+  Future<void> markNotificationAsRead(String id) async {
+    await _notificationsCollection.doc(id).update({'isRead': true});
   }
 
-  Future<void> updateImgbbApiKey(String key) async {
-    _imgbbApiKey = key;
-    notifyListeners();
-    await _settingsCollection.doc('config').set({
-      'imgbbApiKey': key,
-    }, SetOptions(merge: true));
+  Future<void> clearAllNotifications() async {
+    final batch = FirebaseFirestore.instance.batch();
+    for (var n in _notifications) {
+      batch.delete(_notificationsCollection.doc(n.id));
+    }
+    await batch.commit();
   }
 
   void _initRealtimeUpdates() {
@@ -149,6 +207,21 @@ class AppState extends ChangeNotifier {
 
       notifyListeners();
     });
+
+    // Notifications
+    _notificationsSubscription = _notificationsCollection
+        .orderBy('timestamp', descending: true)
+        .limit(50)
+        .snapshots()
+        .listen((snapshot) {
+          _notifications = snapshot.docs.map((doc) {
+            return AppNotification.fromMap(
+              doc.data() as Map<String, dynamic>,
+              doc.id,
+            );
+          }).toList();
+          notifyListeners();
+        });
   }
 
   @override
@@ -156,7 +229,41 @@ class AppState extends ChangeNotifier {
     _subscription?.cancel();
     _settingsSubscription?.cancel();
     _cellsSubscription?.cancel();
+    _notificationsSubscription?.cancel();
     super.dispose();
+  }
+
+  Future<void> updateDefaultCapacity(int newCap) async {
+    _defaultGondolaCapacity = newCap;
+    notifyListeners();
+    await _settingsCollection.doc('config').set({
+      'defaultGondolaCapacity': newCap,
+    }, SetOptions(merge: true));
+  }
+
+  Future<void> updateDefaultMinStockThreshold(int newThreshold) async {
+    _defaultMinStockThreshold = newThreshold;
+    notifyListeners();
+    await _settingsCollection.doc('config').set({
+      'defaultMinStockThreshold': newThreshold,
+    }, SetOptions(merge: true));
+  }
+
+  Future<void> updateDaysToAnalyze(int days) async {
+    _daysToAnalyze = days;
+    notifyListeners();
+    await _settingsCollection.doc('config').set({
+      'daysToAnalyze': days,
+    }, SetOptions(merge: true));
+    refreshAnalysis();
+  }
+
+  Future<void> updateImgbbApiKey(String key) async {
+    _imgbbApiKey = key;
+    notifyListeners();
+    await _settingsCollection.doc('config').set({
+      'imgbbApiKey': key,
+    }, SetOptions(merge: true));
   }
 
   Future<void> _migrateLegacyMapData() async {
@@ -322,6 +429,7 @@ class AppState extends ChangeNotifier {
     required String location, // 'stock' or 'gondola'
     required int quantity,
     required String reason,
+    String source = 'form', // 'form' or 'map' or 'system'
   }) async {
     if (quantity == 0) return;
     final entry = HistoryEntry(
@@ -333,6 +441,7 @@ class AppState extends ChangeNotifier {
       quantity: quantity,
       timestamp: DateTime.now(),
       reason: reason,
+      source: source,
     );
     await _historyCollection.add(entry.toMap());
   }
@@ -354,6 +463,10 @@ class AppState extends ChangeNotifier {
       final data = doc.data() as Map<String, dynamic>;
       final qty = data['quantity'] as int? ?? 0;
       final bid = data['batteryId'] as String? ?? '';
+      final source = data['source'] as String? ?? '';
+
+      // If OUT event, only count if source is MAP (as per requirement)
+      if (data['type'] == 'out' && source != 'map') continue;
 
       // We only care about consumption (Sales/Usage), not transfers
       // Transfers usually show as 'out' from Stock with reason 'restock'
@@ -402,6 +515,14 @@ class AppState extends ChangeNotifier {
   Future<void> removeBatteryFromMap(int x, int y) async {
     if (_currentMapId == null) return;
     final docId = 'cell_${x}_$y';
+
+    // We need to know WHICH battery was there to log history?
+    // The previous implementation just deleted.
+    // Usually removing from map DOES NOT mean sold. It just means removed from map.
+    // So we don't log 'out' here unless the user explicitly says "sold".
+    // The requirement says "out should only be counted if modified via the map".
+    // This usually implies decrementing quantity ON THE MAP.
+
     await _mapsCollection
         .doc(_currentMapId)
         .collection('cells')
@@ -757,38 +878,6 @@ class AppState extends ChangeNotifier {
     return buyList;
   }
 
-  Future<List<HistoryEntry>> fetchHistory({
-    DateTime? start,
-    DateTime? end,
-    String? batteryId,
-  }) async {
-    Query query = _historyCollection.orderBy('timestamp', descending: true);
-
-    if (start != null) {
-      query = query.where(
-        'timestamp',
-        isGreaterThanOrEqualTo: Timestamp.fromDate(start),
-      );
-    }
-    if (end != null) {
-      query = query.where(
-        'timestamp',
-        isLessThanOrEqualTo: Timestamp.fromDate(end),
-      );
-    }
-    if (batteryId != null) {
-      query = query.where('batteryId', isEqualTo: batteryId);
-    }
-
-    final snapshot = await query.get();
-    return snapshot.docs
-        .map(
-          (doc) =>
-              HistoryEntry.fromMap(doc.data() as Map<String, dynamic>, doc.id),
-        )
-        .toList();
-  }
-
   Future<void> addBattery(Battery battery) async {
     final docRef = await _collection.add(battery.toMap());
     // Log Initial Stock
@@ -800,6 +889,7 @@ class AppState extends ChangeNotifier {
         location: 'stock',
         quantity: battery.quantity,
         reason: 'initial_stock',
+        source: 'form',
       );
     }
     if (battery.gondolaQuantity > 0) {
@@ -810,6 +900,7 @@ class AppState extends ChangeNotifier {
         location: 'gondola',
         quantity: battery.gondolaQuantity,
         reason: 'initial_stock',
+        source: 'form',
       );
     }
   }
@@ -833,6 +924,7 @@ class AppState extends ChangeNotifier {
         location: 'stock',
         quantity: stockDelta.abs(),
         reason: 'edit_form',
+        source: 'form',
       );
     }
 
@@ -846,6 +938,7 @@ class AppState extends ChangeNotifier {
         location: 'gondola',
         quantity: gondolaDelta.abs(),
         reason: 'edit_form',
+        source: 'form',
       );
     }
   }
@@ -857,6 +950,7 @@ class AppState extends ChangeNotifier {
     Battery battery,
     int delta, {
     String reason = 'adjustment',
+    String source = 'form',
   }) async {
     final newQty = (battery.quantity + delta).clamp(0, 9999);
     await _collection.doc(battery.id).update({
@@ -873,6 +967,7 @@ class AppState extends ChangeNotifier {
         location: 'stock',
         quantity: delta.abs(),
         reason: reason,
+        source: source,
       );
     }
   }
@@ -882,6 +977,7 @@ class AppState extends ChangeNotifier {
     Battery battery,
     int delta, {
     String reason = 'adjustment',
+    String source = 'form',
   }) async {
     final limit = battery.gondolaLimit > 0
         ? battery.gondolaLimit
@@ -901,6 +997,7 @@ class AppState extends ChangeNotifier {
         location: 'gondola',
         quantity: delta.abs(),
         reason: reason,
+        source: source,
       );
     }
   }
@@ -971,6 +1068,7 @@ class AppState extends ChangeNotifier {
       location: 'gondola',
       quantity: safeAmount,
       reason: 'restock',
+      source: 'form',
     );
 
     // 4. Deduct Stock (Distributed)
@@ -993,6 +1091,7 @@ class AppState extends ChangeNotifier {
         location: 'stock',
         quantity: deduct,
         reason: 'restock',
+        source: 'form',
       );
 
       remainingToDeduct -= deduct;
@@ -1023,6 +1122,7 @@ class AppState extends ChangeNotifier {
             location: 'stock',
             quantity: deduct,
             reason: 'restock',
+            source: 'form',
           );
 
           remainingToDeduct -= deduct;

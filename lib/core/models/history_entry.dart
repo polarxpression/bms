@@ -9,6 +9,7 @@ class HistoryEntry {
   int quantity;
   DateTime timestamp;
   String reason; // 'purchase', 'sale', 'adjustment', 'transfer', 'restock'
+  String source; // 'map', 'form', 'restock', etc.
 
   HistoryEntry({
     required this.id,
@@ -19,6 +20,7 @@ class HistoryEntry {
     required this.quantity,
     required this.timestamp,
     this.reason = '',
+    this.source = '',
   });
 
   Map<String, dynamic> toMap() {
@@ -30,6 +32,7 @@ class HistoryEntry {
       'quantity': quantity,
       'timestamp': Timestamp.fromDate(timestamp),
       'reason': reason,
+      'source': source,
     };
   }
 
@@ -43,6 +46,7 @@ class HistoryEntry {
       quantity: map['quantity'] ?? 0,
       timestamp: (map['timestamp'] as Timestamp).toDate(),
       reason: map['reason'] ?? '',
+      source: map['source'] ?? '',
     );
   }
 }
