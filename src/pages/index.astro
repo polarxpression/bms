@@ -1,0 +1,13 @@
+---
+import MainLayout from '../layouts/MainLayout.astro';
+import { Dashboard } from '../components/Dashboard';
+---
+
+<MainLayout title="Dashboard">
+	<div class="mb-8">
+		<h1 class="text-3xl font-extrabold text-white tracking-tight">Painel de Controle</h1>
+		<p class="text-gray-500 mt-1">Status do estoque e sugestões inteligentes de reposição.</p>
+	</div>
+	
+	<Dashboard client:load />
+</MainLayout>

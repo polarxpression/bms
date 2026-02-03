@@ -1,0 +1,13 @@
+---
+import MainLayout from '../layouts/MainLayout.astro';
+import { ExternalBuy } from '../components/ExternalBuy';
+---
+
+<MainLayout title="Compra Externa">
+	<div class="mb-8">
+		<h1 class="text-3xl font-extrabold text-white tracking-tight">Reposição Externa</h1>
+		<p class="text-gray-500 mt-1">Análise inteligente de estoque baseada em consumo mensal e limites críticos.</p>
+	</div>
+	
+	<ExternalBuy client:load />
+</MainLayout>

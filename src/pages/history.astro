@@ -1,0 +1,13 @@
+---
+import MainLayout from '../layouts/MainLayout.astro';
+import { History as HistoryComponent } from '../components/History';
+---
+
+<MainLayout title="Histórico">
+	<div class="mb-8">
+		<h1 class="text-3xl font-extrabold text-white tracking-tight">Histórico de Movimentações</h1>
+		<p class="text-gray-500 mt-1">Registro completo de entradas e saídas do sistema.</p>
+	</div>
+	
+	<HistoryComponent client:load />
+</MainLayout>

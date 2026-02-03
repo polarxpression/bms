@@ -1,0 +1,13 @@
+---
+import MainLayout from '../layouts/MainLayout.astro';
+import { MapComponent } from '../components/Map';
+---
+
+<MainLayout title="Mapa">
+	<div class="mb-8">
+		<h1 class="text-3xl font-extrabold text-white tracking-tight">Mapa de Exposição</h1>
+		<p class="text-gray-500 mt-1">Gerenciamento visual das baterias na gôndola.</p>
+	</div>
+	
+	<MapComponent client:load />
+</MainLayout>

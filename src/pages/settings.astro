@@ -1,0 +1,13 @@
+---
+import MainLayout from '../layouts/MainLayout.astro';
+import { Settings as SettingsComponent } from '../components/Settings';
+---
+
+<MainLayout title="Configurações">
+	<div class="mb-8">
+		<h1 class="text-3xl font-extrabold text-white tracking-tight">Configurações</h1>
+		<p class="text-gray-500 mt-1">Ajuste os parâmetros globais do sistema PowerTrack.</p>
+	</div>
+	
+	<SettingsComponent client:load />
+</MainLayout>
