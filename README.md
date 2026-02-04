@@ -2,7 +2,7 @@
 
 A specialized inventory management system for batteries, built with Flutter.
 
-## 🌟 Key Features
+## 🌟 Key Features 
 
 *   **Inventory Management:** Easily add, edit, and track batteries in your inventory.
 *   **Barcode Scanning:** Quickly scan battery barcodes to find them in the inventory.
