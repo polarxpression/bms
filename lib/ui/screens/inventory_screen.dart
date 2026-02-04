@@ -598,7 +598,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text('Localização: ${b.name}'),
-        content: FutureBuilder<List<String>>(
+        content: FutureBuilder<List<Map<String, String>>>(
           future: state.findBatteryInMaps(b.id),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
@@ -618,13 +618,22 @@ class _InventoryScreenState extends State<InventoryScreen> {
               child: ListView.builder(
                 shrinkWrap: true,
                 itemCount: maps.length,
-                itemBuilder: (ctx, idx) => ListTile(
-                  leading: const Icon(
-                    Icons.location_on,
-                    color: Colors.blueAccent,
-                  ),
-                  title: Text(maps[idx]),
-                ),
+                itemBuilder: (ctx, idx) {
+                  final m = maps[idx];
+                  return ListTile(
+                    leading: const Icon(
+                      Icons.location_on,
+                      color: Colors.blueAccent,
+                    ),
+                    title: Text(m['name']!),
+                    subtitle: Text(m['purpose']!),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () async {
+                      Navigator.pop(ctx);
+                      await state.navigateToMapHighlight(m['id']!, b.id);
+                    },
+                  );
+                },
               ),
             );
           },

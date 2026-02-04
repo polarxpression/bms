@@ -182,7 +182,7 @@ class _ExternalBuyScreenState extends State<ExternalBuyScreen> {
                           child: ListTile(
                             leading: CircleAvatar(
                               backgroundColor: isDynamic
-                                  ? Colors.purpleAccent.withOpacity(0.2)
+                                  ? Colors.purpleAccent.withValues(alpha: 0.2)
                                   : Colors.blueAccent.withValues(alpha: 0.2),
                               child: Icon(
                                 isDynamic
@@ -237,7 +237,7 @@ class _ExternalBuyScreenState extends State<ExternalBuyScreen> {
                               ),
                               decoration: BoxDecoration(
                                 color: isDynamic
-                                    ? Colors.purpleAccent.withOpacity(0.2)
+                                    ? Colors.purpleAccent.withValues(alpha: 0.2)
                                     : Colors.blueAccent.withValues(alpha: 0.2),
                                 borderRadius: BorderRadius.circular(20),
                               ),

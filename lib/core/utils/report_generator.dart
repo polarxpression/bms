@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:ui' as ui;
 import 'package:flutter/services.dart';
 import 'package:pdf/pdf.dart';
@@ -7,7 +6,6 @@ import 'package:printing/printing.dart';
 import 'package:bms/core/models/battery.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:vector_graphics/vector_graphics.dart';
 
 class ReportGenerator {
   static Future<void> generateBuyReport(
@@ -43,7 +41,7 @@ class ReportGenerator {
       image.dispose();
     } catch (e) {
       // Fail silently or log if needed, logo will just be omitted
-      print('Error loading logo: $e');
+      // debugPrint('Error loading logo: $e');
     }
 
     // Calculate totals

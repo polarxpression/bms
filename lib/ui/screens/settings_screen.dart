@@ -9,7 +9,7 @@ class SettingsScreen extends StatelessWidget {
     final state = AppStateProvider.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Configurações')),
+      appBar: AppBar(title: const Text('Ajustes')),
       body: ListView(
         children: [
           const ListTile(

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:bms/core/models/battery.dart';
 import 'package:bms/state/app_state.dart';
 import 'package:bms/core/utils/search_query_parser.dart';
+import 'package:bms/ui/screens/notifications_screen.dart';
+import 'package:bms/ui/screens/history_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -37,7 +39,39 @@ class _DashboardScreenState extends State<DashboardScreen> {
     const Color surfaceColor = Color(0xFF141414);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Visão Geral')),
+      appBar: AppBar(
+        title: const Text('Visão Geral'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.history_outlined),
+            tooltip: 'Histórico',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const HistoryScreen()),
+              );
+            },
+          ),
+          IconButton(
+            icon: Badge(
+              label: state.unreadNotificationsCount > 0
+                  ? Text('${state.unreadNotificationsCount}')
+                  : null,
+              isLabelVisible: state.unreadNotificationsCount > 0,
+              child: const Icon(Icons.notifications_outlined),
+            ),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const NotificationsScreen(),
+                ),
+              );
+            },
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
       body: LayoutBuilder(
         builder: (context, constraints) {
           final isWide = constraints.maxWidth > 900;
@@ -252,7 +286,7 @@ class _RestockItem extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text('Localização: ${b.name}'),
-        content: FutureBuilder<List<String>>(
+        content: FutureBuilder<List<Map<String, String>>>(
           future: state.findBatteryInMaps(b.id),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
@@ -272,13 +306,30 @@ class _RestockItem extends StatelessWidget {
               child: ListView.builder(
                 shrinkWrap: true,
                 itemCount: maps.length,
-                itemBuilder: (ctx, idx) => ListTile(
-                  leading: const Icon(
-                    Icons.location_on,
-                    color: Colors.blueAccent,
-                  ),
-                  title: Text(maps[idx]),
-                ),
+                itemBuilder: (ctx, idx) {
+                  final m = maps[idx];
+                  return ListTile(
+                    leading: const Icon(
+                      Icons.location_on,
+                      color: Colors.blueAccent,
+                    ),
+                    title: Text(m['name']!),
+                    subtitle: Text(m['purpose']!),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () async {
+                      Navigator.pop(ctx); // Close dialog
+                      await state.navigateToMapHighlight(m['id']!, b.id);
+
+                      // Switch to the map tab.
+                      // This depends on where we are. In DashboardScreen, we are in MainLayoutShell.
+                      // We might need a global navigator or a way to change tabs.
+                      // Since MainLayoutShell is the parent, we can try to find its state if we have a global key.
+                      // Or just let the user know they should click the map tab?
+                      // No, that's bad UX.
+                      // Let's assume we can notify the shell.
+                    },
+                  );
+                },
               ),
             );
           },

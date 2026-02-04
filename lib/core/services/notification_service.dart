@@ -1,6 +1,6 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
-import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:flutter_timezone/flutter_timezone.dart';
 
 class NotificationService {
@@ -16,9 +16,44 @@ class NotificationService {
   Future<void> init() async {
     if (_initialized) return;
 
-    tz.initializeTimeZones();
-    final String timeZoneName = await FlutterTimezone.getLocalTimezone();
-    tz.setLocalLocation(tz.getLocation(timeZoneName));
+    tz_data.initializeTimeZones();
+
+    String timeZoneName;
+    try {
+      final dynamic result = await FlutterTimezone.getLocalTimezone();
+      if (result is String) {
+        timeZoneName = result;
+      } else {
+        try {
+          timeZoneName = (result as dynamic).id;
+        } catch (_) {
+          final str = result.toString();
+          if (str.startsWith('TimezoneInfo(')) {
+            const start = 13;
+            int end = str.indexOf(',', start);
+            if (end == -1) end = str.indexOf(')', start);
+            
+            if (end > start) {
+              timeZoneName = str.substring(start, end).trim();
+            } else {
+              timeZoneName = 'UTC';
+            }
+          } else {
+            timeZoneName = str;
+          }
+        }
+      }
+    } catch (_) {
+      timeZoneName = 'UTC';
+    }
+
+    try {
+      tz.setLocalLocation(tz.getLocation(timeZoneName));
+    } catch (_) {
+      try {
+        tz.setLocalLocation(tz.getLocation('UTC'));
+      } catch (_) {}
+    }
 
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -35,7 +70,9 @@ class NotificationService {
       iOS: initializationSettingsDarwin,
     );
 
-    await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+    await flutterLocalNotificationsPlugin.initialize(
+      settings: initializationSettings,
+    );
     _initialized = true;
 
     await _scheduleWeeklyMapReminder();
@@ -48,11 +85,11 @@ class NotificationService {
     var date = _nextInstanceOfMonday(9, 0);
     
     await flutterLocalNotificationsPlugin.zonedSchedule(
-      1,
-      'Atualizar Mapa',
-      'Lembre-se de atualizar o mapa de baterias hoje!',
-      date,
-      const NotificationDetails(
+      id: 1,
+      title: 'Atualizar Mapa',
+      body: 'Lembre-se de atualizar o mapa de baterias hoje!',
+      scheduledDate: date,
+      notificationDetails: const NotificationDetails(
         android: AndroidNotificationDetails(
           'weekly_reminders',
           'Lembretes Semanais',
@@ -61,9 +98,7 @@ class NotificationService {
           priority: Priority.high,
         ),
       ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
     );
   }
@@ -76,11 +111,11 @@ class NotificationService {
 
     for (int i = 0; i < dates.length; i++) {
        await flutterLocalNotificationsPlugin.zonedSchedule(
-        2 + i,
-        'Comprar Baterias',
-        'Hoje é a primeira segunda-feira do mês. Verifique o estoque!',
-        dates[i],
-        const NotificationDetails(
+        id: 2 + i,
+        title: 'Comprar Baterias',
+        body: 'Hoje é a primeira segunda-feira do mês. Verifique o estoque!',
+        scheduledDate: dates[i],
+        notificationDetails: const NotificationDetails(
           android: AndroidNotificationDetails(
             'monthly_reminders',
             'Lembretes Mensais',
@@ -89,9 +124,7 @@ class NotificationService {
             priority: Priority.high,
           ),
         ),
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       );
     }
   }
@@ -99,10 +132,10 @@ class NotificationService {
   Future<void> showUpdateNotification(String version, String url) async {
     const int id = 999;
     await flutterLocalNotificationsPlugin.show(
-      id,
-      'Atualização Disponível',
-      'Nova versão $version disponível. Toque para baixar.',
-      const NotificationDetails(
+      id: id,
+      title: 'Atualização Disponível',
+      body: 'Nova versão $version disponível. Toque para baixar.',
+      notificationDetails: const NotificationDetails(
         android: AndroidNotificationDetails(
           'updates',
           'Atualizações',

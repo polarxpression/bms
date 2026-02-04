@@ -24,10 +24,62 @@ class _TableMapScreenState extends State<TableMapScreen> {
     // Center the view on the first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_hasCentered) {
-        _centerMap();
+        final state = AppStateProvider.of(context);
+        if (state.targetBatteryId == null) {
+          _centerMap();
+        }
         _hasCentered = true;
       }
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final state = AppStateProvider.of(context);
+    if (state.targetBatteryId != null && state.batteryMap.isNotEmpty) {
+      _checkAndFocusTarget(state);
+    }
+  }
+
+  void _checkAndFocusTarget(AppState state) {
+    final targetId = state.targetBatteryId;
+    if (targetId == null) return;
+
+    // Find the cell coordinates
+    String? foundKey;
+    state.batteryMap.forEach((key, val) {
+      if (val == targetId) foundKey = key;
+    });
+
+    if (foundKey != null) {
+      final parts = foundKey!.split(',');
+      final x = int.parse(parts[0]);
+      final y = int.parse(parts[1]);
+      
+      // Delay slightly to ensure layout is ready
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _focusOnCell(x, y);
+      });
+    }
+  }
+
+  void _focusOnCell(int cellX, int cellY) {
+    if (!mounted) return;
+    final size = MediaQuery.of(context).size;
+    const double offsetX = 2000.0;
+    const double offsetY = 2000.0;
+
+    final double targetX = offsetX + (cellX * (cellSize + cellSpacing)) + (cellSize / 2);
+    final double targetY = offsetY + (cellY * (cellSize + cellSpacing)) + (cellSize / 2);
+
+    final double x = -targetX + (size.width / 2);
+    final double y =
+        -targetY +
+        ((size.height - kToolbarHeight - kBottomNavigationBarHeight) / 2);
+
+    _transformationController.value = Matrix4.identity()
+      ..setTranslationRaw(x, y, 0);
   }
 
   @override
@@ -376,6 +428,8 @@ class _TableMapScreenState extends State<TableMapScreen> {
     Battery battery,
     AppState state,
   ) {
+    final bool isTarget = state.targetBatteryId == battery.id;
+    
     return DragTarget<String>(
       onWillAcceptWithDetails: (details) => details.data != '$x,$y',
       onAcceptWithDetails: (details) {
@@ -419,14 +473,19 @@ class _TableMapScreenState extends State<TableMapScreen> {
             ),
           ),
           child: GestureDetector(
-            onTap: () => _showCellDetails(context, x, y, battery, state),
+            onTap: () {
+              if (isTarget) state.clearHighlight();
+              _showCellDetails(context, x, y, battery, state);
+            },
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
+              duration: const Duration(milliseconds: 300),
               curve: Curves.easeInOut,
               decoration: BoxDecoration(
                 border: isHovered
                     ? Border.all(color: Colors.greenAccent, width: 3)
-                    : null,
+                    : isTarget
+                        ? Border.all(color: Colors.pinkAccent, width: 4)
+                        : null,
                 borderRadius: BorderRadius.circular(8),
                 boxShadow: isHovered
                     ? [
@@ -436,7 +495,15 @@ class _TableMapScreenState extends State<TableMapScreen> {
                           spreadRadius: 2,
                         ),
                       ]
-                    : [],
+                    : isTarget
+                        ? [
+                            BoxShadow(
+                              color: Colors.pinkAccent.withValues(alpha: 0.6),
+                              blurRadius: 15,
+                              spreadRadius: 5,
+                            ),
+                          ]
+                        : [],
               ),
               child: Stack(
                 children: [

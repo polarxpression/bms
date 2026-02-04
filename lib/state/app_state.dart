@@ -39,11 +39,18 @@ class AppState extends ChangeNotifier {
   String? _currentMapId;
   Map<String, String> _batteryMap = {}; // Cells of current map
 
+  // Highlight State
+  String? _targetBatteryId;
+  String? _targetCell;
+
   // Analysis Data
   Map<String, double> _monthlyConsumption = {}; // BatteryId -> Avg Qty/Month
 
   // Notifications Data
   List<AppNotification> _notifications = [];
+
+  // Navigation State
+  int _currentTabIndex = 0;
 
   List<Battery> get batteries => List.unmodifiable(_batteries);
   bool get isLoading => _isLoading;
@@ -58,6 +65,9 @@ class AppState extends ChangeNotifier {
   List<AppNotification> get notifications => List.unmodifiable(_notifications);
   int get unreadNotificationsCount =>
       _notifications.where((n) => !n.isRead).length;
+  String? get targetBatteryId => _targetBatteryId;
+  String? get targetCell => _targetCell;
+  int get currentTabIndex => _currentTabIndex;
 
   BatteryMap? get currentMap => _maps.isEmpty || _currentMapId == null
       ? null
@@ -147,6 +157,34 @@ class AppState extends ChangeNotifier {
       batch.delete(_notificationsCollection.doc(n.id));
     }
     await batch.commit();
+  }
+
+  void setTabIndex(int index) {
+    _currentTabIndex = index;
+    // Clear highlight if navigating away or re-selecting
+    _targetBatteryId = null;
+    _targetCell = null;
+    notifyListeners();
+  }
+
+  void clearHighlight() {
+    _targetBatteryId = null;
+    _targetCell = null;
+    notifyListeners();
+  }
+
+  Future<void> navigateToMapHighlight(String mapId, String batteryId) async {
+    // 1. Select the map
+    selectMap(mapId);
+
+    // 2. Set target
+    _targetBatteryId = batteryId;
+    _targetCell = null;
+
+    // 3. Switch to Map Tab (Index 2 in MainLayoutShell)
+    _currentTabIndex = 2;
+
+    notifyListeners();
   }
 
   void _initRealtimeUpdates() {
@@ -422,6 +460,33 @@ class AppState extends ChangeNotifier {
   }
 
   // History & Analysis
+  Future<List<HistoryEntry>> fetchHistory({
+    DateTime? start,
+    DateTime? end,
+  }) async {
+    Query query = _historyCollection.orderBy('timestamp', descending: true);
+
+    if (start != null) {
+      query = query.where(
+        'timestamp',
+        isGreaterThanOrEqualTo: Timestamp.fromDate(start),
+      );
+    }
+    if (end != null) {
+      // End of the day
+      final e = DateTime(end.year, end.month, end.day, 23, 59, 59);
+      query = query.where(
+        'timestamp',
+        isLessThanOrEqualTo: Timestamp.fromDate(e),
+      );
+    }
+
+    final snapshot = await query.get();
+    return snapshot.docs.map((doc) {
+      return HistoryEntry.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+    }).toList();
+  }
+
   Future<void> logHistory({
     required String batteryId,
     required String batteryName,
@@ -616,42 +681,28 @@ class AppState extends ChangeNotifier {
     return total;
   }
 
-  Future<List<String>> findBatteryInMaps(String batteryId) async {
-    final List<String> results = [];
-
-    // Check current in-memory map first for speed
-    if (_currentMapId != null && _batteryMap.containsValue(batteryId)) {
-      // We know it's in current map, but we want to know exact cell count or just presence?
-      // The UI just lists map names.
-      final current = currentMap;
-      if (current != null) {
-        results.add('${current.name} (${current.purpose})');
-      }
-    }
+  Future<List<Map<String, String>>> findBatteryInMaps(String batteryId) async {
+    final List<Map<String, String>> results = [];
 
     // Iterate all maps to check their cells collection
-    // This avoids collectionGroup index requirements
     for (var map in _maps) {
-      // If we already found it in current map, skip querying it again if you want unique names
-      // But let's just query to be safe and consistent, or skip if matched.
-      // Actually, let's just query all to be sure.
-
       try {
         final query = await _mapsCollection
             .doc(map.id)
             .collection('cells')
             .where('batteryId', isEqualTo: batteryId)
-            .limit(1) // We just need to know if it exists in this map
+            .limit(1)
             .get();
 
         if (query.docs.isNotEmpty) {
-          final label = '${map.name} (${map.purpose})';
-          if (!results.contains(label)) {
-            results.add(label);
-          }
+          results.add({
+            'id': map.id,
+            'name': map.name,
+            'purpose': map.purpose,
+          });
         }
       } catch (e) {
-        // Ignore error for this map
+        // Ignore error
       }
     }
 

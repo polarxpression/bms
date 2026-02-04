@@ -50,7 +50,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
               children: [
                 Expanded(
                   child: DropdownButtonFormField<GroupingType>(
-                    value: _grouping,
+                    initialValue: _grouping,
                     dropdownColor: const Color(0xFF27272A),
                     decoration: const InputDecoration(
                       labelText: 'Agrupar por',
@@ -192,7 +192,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                 Container(
                                   width: 1,
                                   height: 40,
-                                  color: Colors.grey.withOpacity(0.3),
+                                  color: Colors.grey.withValues(alpha: 0.3),
                                 ),
                                 Column(
                                   children: [

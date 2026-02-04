@@ -6,12 +6,13 @@ import 'package:bms/src/data/services/update_service.dart';
 import 'package:bms/ui/screens/dashboard_screen.dart';
 import 'package:bms/ui/screens/external_buy_screen.dart';
 import 'package:bms/ui/screens/inventory_screen.dart';
-import 'package:bms/ui/screens/history_screen.dart';
-import 'package:bms/ui/screens/settings_screen.dart';
+
+
 import 'package:bms/ui/screens/battery_form_screen.dart';
 import 'package:bms/ui/screens/table_map_screen.dart';
 
-import 'package:bms/ui/screens/notifications_screen.dart';
+
+import 'package:bms/ui/screens/settings_screen.dart';
 
 class MainLayoutShell extends StatefulWidget {
   const MainLayoutShell({super.key});
@@ -20,14 +21,11 @@ class MainLayoutShell extends StatefulWidget {
 }
 
 class _MainLayoutShellState extends State<MainLayoutShell> {
-  int _currentIndex = 0;
   final _pages = const [
     DashboardScreen(),
     ExternalBuyScreen(),
     TableMapScreen(),
     InventoryScreen(),
-    HistoryScreen(),
-    NotificationsScreen(),
     SettingsScreen(),
   ];
 
@@ -117,59 +115,38 @@ class _MainLayoutShellState extends State<MainLayoutShell> {
               body: Row(
                 children: [
                   NavigationRail(
-                    selectedIndex: _currentIndex,
-                    onDestinationSelected: (idx) =>
-                        setState(() => _currentIndex = idx),
+                    selectedIndex: state.currentTabIndex,
+                    onDestinationSelected: (idx) => state.setTabIndex(idx),
                     labelType: NavigationRailLabelType.all,
-                    destinations: [
-                      const NavigationRailDestination(
+                    destinations: const [
+                      NavigationRailDestination(
                         icon: Icon(Icons.dashboard_outlined),
                         label: Text('Painel'),
                       ),
-                      const NavigationRailDestination(
+                      NavigationRailDestination(
                         icon: Icon(Icons.shopping_cart_outlined),
                         label: Text('Comprar'),
                       ),
-                      const NavigationRailDestination(
+                      NavigationRailDestination(
                         icon: Icon(Icons.map_outlined),
                         label: Text('Mapa'),
                       ),
-                      const NavigationRailDestination(
+                      NavigationRailDestination(
                         icon: Icon(Icons.inventory_2_outlined),
                         label: Text('Estoque'),
                       ),
-                      const NavigationRailDestination(
-                        icon: Icon(Icons.history_edu_outlined),
-                        label: Text('Histórico'),
-                      ),
                       NavigationRailDestination(
-                        icon: Badge(
-                          label: state.unreadNotificationsCount > 0
-                              ? Text('${state.unreadNotificationsCount}')
-                              : null,
-                          isLabelVisible: state.unreadNotificationsCount > 0,
-                          child: const Icon(Icons.notifications_outlined),
-                        ),
-                        selectedIcon: Badge(
-                          label: state.unreadNotificationsCount > 0
-                              ? Text('${state.unreadNotificationsCount}')
-                              : null,
-                          isLabelVisible: state.unreadNotificationsCount > 0,
-                          child: const Icon(Icons.notifications),
-                        ),
-                        label: const Text('Avisos'),
-                      ),
-                      const NavigationRailDestination(
                         icon: Icon(Icons.settings_outlined),
+                        selectedIcon: Icon(Icons.settings),
                         label: Text('Ajustes'),
                       ),
                     ],
                   ),
                   const VerticalDivider(thickness: 1, width: 1),
-                  Expanded(child: _pages[_currentIndex]),
+                  Expanded(child: _pages[state.currentTabIndex]),
                 ],
               ),
-              floatingActionButton: _currentIndex == 3
+              floatingActionButton: state.currentTabIndex == 3
                   ? FloatingActionButton(
                       onPressed: () => _showForm(context),
                       child: const Icon(Icons.add),
@@ -178,56 +155,35 @@ class _MainLayoutShellState extends State<MainLayoutShell> {
             );
           } else {
             return Scaffold(
-              body: _pages[_currentIndex],
+              body: _pages[state.currentTabIndex],
               bottomNavigationBar: NavigationBar(
-                selectedIndex: _currentIndex,
-                onDestinationSelected: (idx) =>
-                    setState(() => _currentIndex = idx),
-                destinations: [
-                  const NavigationDestination(
+                selectedIndex: state.currentTabIndex,
+                onDestinationSelected: (idx) => state.setTabIndex(idx),
+                destinations: const [
+                  NavigationDestination(
                     icon: Icon(Icons.dashboard_outlined),
                     label: 'Painel',
                   ),
-                  const NavigationDestination(
+                  NavigationDestination(
                     icon: Icon(Icons.shopping_cart_outlined),
                     label: 'Comprar',
                   ),
-                  const NavigationDestination(
+                  NavigationDestination(
                     icon: Icon(Icons.map_outlined),
                     label: 'Mapa',
                   ),
-                  const NavigationDestination(
+                  NavigationDestination(
                     icon: Icon(Icons.inventory_2_outlined),
                     label: 'Estoque',
                   ),
-                  const NavigationDestination(
-                    icon: Icon(Icons.history_edu_outlined),
-                    label: 'Histórico',
-                  ),
                   NavigationDestination(
-                    icon: Badge(
-                      label: state.unreadNotificationsCount > 0
-                          ? Text('${state.unreadNotificationsCount}')
-                          : null,
-                      isLabelVisible: state.unreadNotificationsCount > 0,
-                      child: const Icon(Icons.notifications_outlined),
-                    ),
-                    selectedIcon: Badge(
-                      label: state.unreadNotificationsCount > 0
-                          ? Text('${state.unreadNotificationsCount}')
-                          : null,
-                      isLabelVisible: state.unreadNotificationsCount > 0,
-                      child: const Icon(Icons.notifications),
-                    ),
-                    label: 'Avisos',
-                  ),
-                  const NavigationDestination(
                     icon: Icon(Icons.settings_outlined),
+                    selectedIcon: Icon(Icons.settings),
                     label: 'Ajustes',
                   ),
                 ],
               ),
-              floatingActionButton: _currentIndex == 3
+              floatingActionButton: state.currentTabIndex == 3
                   ? FloatingActionButton(
                       onPressed: () => _showForm(context),
                       child: const Icon(Icons.add),
