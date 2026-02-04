@@ -1,6 +1,8 @@
-import { useState, useEffect, useMemo, type FormEvent } from 'react';
+import { useState, useEffect, useMemo, type FormEvent, useRef } from 'react';
 import type { Battery, AppSettings } from '../types';
 import { batteryService } from '../services/batteryService';
+import { imageUploadService } from '../services/imageUploadService';
+import { SearchQueryParser } from '../utils/searchQueryParser';
 
 interface Props {
   battery?: Battery;
@@ -32,6 +34,11 @@ export const BatteryForm = ({ battery, batteries = [], onClose }: Props) => {
     linkedBatteryId: ''
   });
 
+  const [uploading, setUploading] = useState(false);
+  const [showPicker, setShowPicker] = useState(false);
+  const [pickerQuery, setPickerQuery] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     const unsub = batteryService.subscribeToSettings(setSettings);
     return () => unsub();
@@ -58,6 +65,18 @@ export const BatteryForm = ({ battery, batteries = [], onClose }: Props) => {
     Array.from(new Set(batteries.map(b => b.type).filter(Boolean))).sort(), 
   [batteries]);
 
+  const stockBatteries = useMemo(() => {
+    return batteries.filter(b => {
+        if (battery && b.id === battery.id) return false;
+        return b.location === 'Estoque';
+    });
+  }, [batteries, battery]);
+
+  const filteredPickerBatteries = useMemo(() => {
+    if (!pickerQuery) return stockBatteries;
+    return stockBatteries.filter(b => SearchQueryParser.matches(b, pickerQuery));
+  }, [stockBatteries, pickerQuery]);
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     try {
@@ -81,10 +100,39 @@ export const BatteryForm = ({ battery, batteries = [], onClose }: Props) => {
     setFormData(prev => ({ ...prev, [name]: val }));
   };
 
-  const handleImageUpload = () => {
-      const url = prompt("Insira a URL da imagem:");
-      if (url) setFormData(prev => ({ ...prev, imageUrl: url }));
+  const handleImageClick = () => {
+      fileInputRef.current?.click();
   };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      if (!settings.imgbbApiKey) {
+          alert("Configure a chave da API do ImgBB nas Configurações primeiro.");
+          return;
+      }
+
+      setUploading(true);
+      try {
+          const url = await imageUploadService.uploadImage(file, settings.imgbbApiKey);
+          if (url) {
+              setFormData(prev => ({ ...prev, imageUrl: url }));
+          } else {
+              alert("Falha ao enviar imagem. Verifique sua chave API.");
+          }
+      } catch (err) {
+          console.error(err);
+          alert("Erro no upload.");
+      } finally {
+          setUploading(false);
+      }
+  };
+
+  const linkedBatteryName = useMemo(() => {
+    if (!formData.linkedBatteryId) return 'Sem vínculo (Nenhum)';
+    return stockBatteries.find(b => b.id === formData.linkedBatteryId)?.name || 'Item vinculado';
+  }, [formData.linkedBatteryId, stockBatteries]);
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 overflow-y-auto animate-fade-in">
@@ -111,11 +159,23 @@ export const BatteryForm = ({ battery, batteries = [], onClose }: Props) => {
             {/* Image & Main Info */}
             <div className="flex flex-col md:flex-row gap-8">
                 <div className="flex-shrink-0 flex flex-col items-center">
+                    <input 
+                        type="file" 
+                        ref={fileInputRef} 
+                        onChange={handleFileChange} 
+                        accept="image/*" 
+                        className="hidden" 
+                    />
                     <div 
-                        onClick={handleImageUpload}
+                        onClick={handleImageClick}
                         className="w-40 h-40 bg-black/40 rounded-[2rem] border-2 border-dashed border-white/10 flex flex-col items-center justify-center cursor-pointer hover:border-[#EC4899]/50 transition-all overflow-hidden relative group shadow-inner"
                     >
-                        {formData.imageUrl ? (
+                        {uploading ? (
+                            <div className="flex flex-col items-center">
+                                <div className="w-8 h-8 border-2 border-[#EC4899]/20 border-t-[#EC4899] rounded-full animate-spin mb-2"></div>
+                                <span className="text-[10px] text-[#EC4899] font-black uppercase tracking-widest">Enviando...</span>
+                            </div>
+                        ) : formData.imageUrl ? (
                             <img src={formData.imageUrl} className="w-full h-full object-cover" />
                         ) : (
                             <>
@@ -124,7 +184,7 @@ export const BatteryForm = ({ battery, batteries = [], onClose }: Props) => {
                             </>
                         )}
                         <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                            <span className="text-xs font-black text-white uppercase tracking-widest">Alterar</span>
+                            <span className="text-xs font-black text-white uppercase tracking-widest">{formData.imageUrl ? 'Alterar' : 'Upload'}</span>
                         </div>
                     </div>
                 </div>
@@ -173,6 +233,18 @@ export const BatteryForm = ({ battery, batteries = [], onClose }: Props) => {
                         <FormInput label="Qtd. Exposta" name="gondolaQuantity" type="number" value={formData.gondolaQuantity} onChange={handleChange} />
                         <FormInput label="Capacidade" name="gondolaLimit" type="number" value={formData.gondolaLimit} onChange={handleChange} />
                     </div>
+                    
+                    <div className="space-y-1.5">
+                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Vincular ao Estoque</label>
+                        <button 
+                            type="button"
+                            onClick={() => setShowPicker(true)}
+                            className="w-full flex items-center justify-between bg-black/40 text-white p-3.5 rounded-xl border border-white/5 hover:border-[#EC4899]/30 transition-all text-xs font-bold"
+                        >
+                            <span className="truncate">{linkedBatteryName}</span>
+                            <span className="material-icons text-gray-600 text-sm">link</span>
+                        </button>
+                    </div>
                     <FormInput label="Localização no Mapa" name="location" value={formData.location} onChange={handleChange} placeholder="Ex: G-01, Setor B" />
                 </div>
             </div>
@@ -209,6 +281,65 @@ export const BatteryForm = ({ battery, batteries = [], onClose }: Props) => {
                 </button>
             </div>
         </form>
+
+        {showPicker && (
+            <div className="fixed inset-0 z-[110] bg-black/90 backdrop-blur-xl flex items-center justify-center p-4 animate-fade-in">
+                <div className="bg-[#141414] w-full max-w-lg rounded-[2.5rem] border border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
+                    <div className="p-6 border-b border-white/5 flex justify-between items-center">
+                        <h3 className="text-sm font-black text-white uppercase tracking-widest">Vincular ao Estoque</h3>
+                        <button onClick={() => setShowPicker(false)} className="text-gray-500 hover:text-white">
+                            <span className="material-icons">close</span>
+                        </button>
+                    </div>
+                    
+                    <div className="p-6 space-y-4 flex-1 overflow-hidden flex flex-col">
+                        <div className="relative group">
+                            <span className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <span className="material-icons text-gray-500 text-sm group-focus-within:text-[#EC4899]">search</span>
+                            </span>
+                            <input 
+                                type="text"
+                                placeholder="Procurar no estoque..."
+                                className="w-full bg-black/40 text-white pl-10 pr-4 py-3 rounded-xl border border-white/5 focus:border-[#EC4899]/50 outline-none text-xs"
+                                value={pickerQuery}
+                                onChange={(e) => setPickerQuery(e.target.value)}
+                            />
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2">
+                            <button 
+                                type="button"
+                                onClick={() => { setFormData(p => ({ ...p, linkedBatteryId: '' })); setShowPicker(false); }}
+                                className="w-full flex items-center gap-3 p-3 bg-red-500/5 hover:bg-red-500/10 text-red-500 rounded-xl transition-colors border border-red-500/10"
+                            >
+                                <span className="material-icons text-sm">link_off</span>
+                                <span className="text-xs font-bold uppercase tracking-widest">Remover Vínculo</span>
+                            </button>
+
+                            {filteredPickerBatteries.map(b => (
+                                <button 
+                                    key={b.id}
+                                    type="button"
+                                    onClick={() => { setFormData(p => ({ ...p, linkedBatteryId: b.id })); setShowPicker(false); }}
+                                    className={`w-full flex items-center gap-4 p-3 rounded-2xl border transition-all ${formData.linkedBatteryId === b.id ? 'bg-[#EC4899]/10 border-[#EC4899]/30' : 'bg-white/5 border-white/5 hover:border-white/10'}`}
+                                >
+                                    <div className="w-10 h-10 rounded-lg bg-black/40 overflow-hidden flex-shrink-0">
+                                        {b.imageUrl ? <img src={b.imageUrl} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-gray-700"><span className="material-icons text-sm">battery_std</span></div>}
+                                    </div>
+                                    <div className="text-left flex-1 min-w-0">
+                                        <p className="text-xs font-bold text-white truncate">{b.name}</p>
+                                        <p className="text-[10px] text-gray-500 truncate">{b.brand} • {b.type}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-[10px] font-black text-[#EC4899]">{b.quantity} un</p>
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )}
       </div>
     </div>
   );

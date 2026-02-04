@@ -17,6 +17,7 @@ const COLLECTION_NAME = "batteries";
 const HISTORY_COLLECTION = "history";
 const MAPS_COLLECTION = "maps";
 const SETTINGS_COLLECTION = "settings";
+const NOTIFICATIONS_COLLECTION = "notifications";
 
 export const batteryService = {
   subscribeToSettings: (callback: (settings: AppSettings) => void) => {
@@ -317,9 +318,80 @@ export const batteryService = {
     await deleteDoc(doc(db, MAPS_COLLECTION, mapId, "cells", docId));
   },
 
+  moveBatteryOnMap: async (mapId: string, fromX: number, fromY: number, toX: number, toY: number, batteryId: string) => {
+    const fromDocId = `cell_${fromX}_${fromY}`;
+    const toDocId = `cell_${toX}_${toY}`;
+    const { writeBatch } = await import("firebase/firestore");
+    const batch = writeBatch(db);
+
+    const fromRef = doc(db, MAPS_COLLECTION, mapId, "cells", fromDocId);
+    const toRef = doc(db, MAPS_COLLECTION, mapId, "cells", toDocId);
+
+    batch.delete(fromRef);
+    batch.set(toRef, { x: toX, y: toY, batteryId, updatedAt: serverTimestamp() });
+
+    await batch.commit();
+  },
+
+  swapBatteriesOnMap: async (mapId: string, x1: number, y1: number, x2: number, y2: number, id1: string, id2: string) => {
+    const docId1 = `cell_${x1}_${y1}`;
+    const docId2 = `cell_${x2}_${y2}`;
+    const { writeBatch } = await import("firebase/firestore");
+    const batch = writeBatch(db);
+
+    const ref1 = doc(db, MAPS_COLLECTION, mapId, "cells", docId1);
+    const ref2 = doc(db, MAPS_COLLECTION, mapId, "cells", docId2);
+
+    batch.set(ref1, { x: x1, y: y1, batteryId: id2, updatedAt: serverTimestamp() });
+    batch.set(ref2, { x: x2, y: y2, batteryId: id1, updatedAt: serverTimestamp() });
+
+    await batch.commit();
+  },
+
   fetchHistory: async () => {
     const q = query(collection(db, HISTORY_COLLECTION), orderBy("timestamp", "desc"));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as HistoryEntry[];
+  },
+
+  // Notification Methods
+  subscribeToNotifications: (callback: (notifications: any[]) => void) => {
+    const q = query(collection(db, NOTIFICATIONS_COLLECTION), orderBy("timestamp", "desc"));
+    return onSnapshot(q, (snapshot) => {
+      callback(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+  },
+
+  markNotificationAsRead: async (id: string) => {
+    const ref = doc(db, NOTIFICATIONS_COLLECTION, id);
+    await updateDoc(ref, { isRead: true });
+  },
+
+  clearAllNotifications: async () => {
+    const q = query(collection(db, NOTIFICATIONS_COLLECTION));
+    const snapshot = await getDocs(q);
+    const { writeBatch } = await import("firebase/firestore");
+    const batch = writeBatch(db);
+    snapshot.docs.forEach((doc) => batch.delete(doc.ref));
+    await batch.commit();
+  },
+
+  // Map Helper
+  findBatteryInMaps: async (batteryId: string): Promise<any[]> => {
+    const mapsSnapshot = await getDocs(collection(db, MAPS_COLLECTION));
+    const results: any[] = [];
+    
+    for (const mapDoc of mapsSnapshot.docs) {
+      const cellsSnapshot = await getDocs(collection(db, MAPS_COLLECTION, mapDoc.id, "cells"));
+      const found = cellsSnapshot.docs.some(cellDoc => cellDoc.data().batteryId === batteryId);
+      if (found) {
+        results.push({
+          id: mapDoc.id,
+          name: mapDoc.data().name,
+          purpose: mapDoc.data().purpose
+        });
+      }
+    }
+    return results;
   }
 };

@@ -1,5 +1,7 @@
 ---
 import "../styles/global.css";
+import { NotificationBadge } from "../components/NotificationBadge";
+import { SystemManager } from "../components/SystemManager";
 
 interface Props {
 	title: string;
@@ -7,14 +9,16 @@ interface Props {
 
 const { title } = Astro.props;
 const currentPath = Astro.url.pathname;
+const base = "/bms";
 
 const navItems = [
-	{ href: "/", label: "Visão Geral", icon: "dashboard" },
-	{ href: "/inventory", label: "Inventário", icon: "inventory_2" },
-	{ href: "/map", label: "Mapa", icon: "map" },
-	{ href: "/buy", label: "Compra Externa", icon: "shopping_cart" },
-	{ href: "/history", label: "Histórico", icon: "history" },
-	{ href: "/settings", label: "Configurações", icon: "settings" },
+	{ href: `${base}/`, label: "Visão Geral", icon: "dashboard" },
+	{ href: `${base}/inventory`, label: "Inventário", icon: "inventory_2" },
+	{ href: `${base}/map`, label: "Mapa", icon: "map" },
+	{ href: `${base}/buy`, label: "Compra Externa", icon: "shopping_cart" },
+	{ href: `${base}/history`, label: "Histórico", icon: "history" },
+	{ href: `${base}/notifications`, label: "Notificações", icon: "notifications" },
+	{ href: `${base}/settings`, label: "Configurações", icon: "settings" },
 ];
 ---
 
@@ -33,6 +37,7 @@ const navItems = [
 		<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 	</head>
 	<body class="bg-[#050505] text-gray-100 font-['Plus_Jakarta_Sans',sans-serif] min-h-screen flex flex-col md:flex-row antialiased selection:bg-[#EC4899]/30 selection:text-white">
+		<SystemManager client:load />
 		<!-- Mobile Header -->
 		<header class="md:hidden sticky top-0 z-50 bg-[#141414]/80 backdrop-blur-xl p-4 flex justify-between items-center border-b border-white/5">
 			<div class="flex items-center gap-2">
@@ -63,7 +68,7 @@ const navItems = [
 			<nav class="flex-1 overflow-y-auto py-2 px-4 custom-scrollbar">
 				<ul class="space-y-1.5">
 					{navItems.map((item) => {
-						const isActive = currentPath === item.href || (item.href !== '/' && currentPath.startsWith(item.href));
+						const isActive = currentPath === item.href || (item.href !== `${base}/` && currentPath.startsWith(item.href));
 						return (
 							<li>
 								<a 
@@ -79,6 +84,7 @@ const navItems = [
 										{item.icon}
 									</span>
 									<span class="font-semibold tracking-tight">{item.label}</span>
+									{item.href === '/notifications' && <NotificationBadge client:load />}
 									{!isActive && <span class="material-icons ml-auto text-gray-600 opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0 text-sm">chevron_right</span>}
 								</a>
 							</li>

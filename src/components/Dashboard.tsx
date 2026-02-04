@@ -156,6 +156,10 @@ const StatBox = ({ label, value, icon, color }: { label: string, value: number, 
 );
 
 const RestockCard = ({ battery, onRestock, style }: { battery: Battery, onRestock: () => void, style?: any }) => {
+    const [showMaps, setShowMaps] = useState(false);
+    const [maps, setMaps] = useState<any[]>([]);
+    const [loadingMaps, setLoadingMaps] = useState(false);
+
     const limit = battery.gondolaLimit || 20;
     const current = battery.gondolaQuantity || 0;
     const percentage = Math.min(100, (current / limit) * 100);
@@ -163,9 +167,22 @@ const RestockCard = ({ battery, onRestock, style }: { battery: Battery, onRestoc
     const canMove = Math.min(needed, battery.quantity);
     const isOutOfStock = battery.quantity === 0;
 
+    const handleShowMaps = async () => {
+        setShowMaps(true);
+        setLoadingMaps(true);
+        try {
+            const results = await batteryService.findBatteryInMaps(battery.id);
+            setMaps(results);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoadingMaps(false);
+        }
+    };
+
     return (
         <div 
-            className="bg-[#141414] p-6 rounded-3xl border border-white/5 hover:border-[#EC4899]/30 transition-all group animate-fade-in-up shadow-lg hover:shadow-[#EC4899]/5"
+            className="bg-[#141414] p-6 rounded-3xl border border-white/5 hover:border-[#EC4899]/30 transition-all group animate-fade-in-up shadow-lg hover:shadow-[#EC4899]/5 relative"
             style={style}
         >
             <div className="flex items-start justify-between mb-6">
@@ -178,8 +195,17 @@ const RestockCard = ({ battery, onRestock, style }: { battery: Battery, onRestoc
                         <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">{battery.model}</p>
                     </div>
                 </div>
-                <div className="px-3 py-1 bg-white/5 rounded-full">
-                    <p className="text-[10px] font-black text-gray-500">{battery.type}</p>
+                <div className="flex items-center gap-2">
+                    <button 
+                        onClick={handleShowMaps}
+                        className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 flex items-center justify-center transition-colors"
+                        title="Ver nos Mapas"
+                    >
+                        <span className="material-icons text-sm">map</span>
+                    </button>
+                    <div className="px-3 py-1 bg-white/5 rounded-full">
+                        <p className="text-[10px] font-black text-gray-500">{battery.type}</p>
+                    </div>
                 </div>
             </div>
             
@@ -217,6 +243,38 @@ const RestockCard = ({ battery, onRestock, style }: { battery: Battery, onRestoc
                     <span className="material-icons group-hover/btn:translate-x-1 transition-transform">arrow_forward</span>
                 </button>
             </div>
+
+            {/* Map Modal Overlay */}
+            {showMaps && (
+                <div className="absolute inset-0 z-50 bg-[#141414] rounded-3xl p-6 flex flex-col animate-fade-in">
+                    <div className="flex items-center justify-between mb-4">
+                        <h4 className="text-sm font-black text-white uppercase tracking-widest">Localização</h4>
+                        <button onClick={() => setShowMaps(false)} className="text-gray-500 hover:text-white transition-colors">
+                            <span className="material-icons text-lg">close</span>
+                        </button>
+                    </div>
+                    <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2">
+                        {loadingMaps ? (
+                            <div className="flex items-center justify-center py-8">
+                                <div className="w-6 h-6 border-2 border-blue-500/20 border-t-blue-500 rounded-full animate-spin"></div>
+                            </div>
+                        ) : maps.length === 0 ? (
+                            <p className="text-xs text-gray-600 text-center py-4">Não posicionado em mapas.</p>
+                        ) : (
+                            maps.map(m => (
+                                <a key={m.id} href={`/bms/map?highlight=${battery.id}&mapId=${m.id}`} className="flex items-center gap-3 p-3 bg-white/5 rounded-xl hover:bg-white/10 transition-colors border border-white/5">
+                                    <span className="material-icons text-blue-500 text-sm">location_on</span>
+                                    <div>
+                                        <p className="text-xs font-bold text-white">{m.name}</p>
+                                        <p className="text-[10px] text-gray-500">{m.purpose}</p>
+                                    </div>
+                                    <span className="material-icons text-gray-700 ml-auto text-sm">chevron_right</span>
+                                </a>
+                            ))
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

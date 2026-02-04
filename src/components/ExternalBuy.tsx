@@ -13,6 +13,7 @@ export const ExternalBuy = () => {
   const [loading, setLoading] = useState(true);
   const [selectedBrand, setSelectedBrand] = useState<string>('');
   const [selectedType, setSelectedType] = useState<string>('');
+  const [roundTo, setRoundTo] = useState<number>(0);
 
   useEffect(() => {
     let unsubBatteries: () => void;
@@ -66,15 +67,21 @@ export const ExternalBuy = () => {
     if (filteredList.length === 0) return;
     
     const headers = ["Marca", "Modelo", "Tipo", "EAN", "Estoque Atual", "Minimo", "Sugestao Compra"];
-    const rows = filteredList.map((b: Battery) => [
-      b.brand,
-      b.model,
-      b.type || "",
-      b.barcode,
-      b.quantity,
-      b.minStockThreshold,
-      Math.max(0, b.minStockThreshold - b.quantity)
-    ]);
+    const rows = filteredList.map((b: Battery) => {
+      let needed = Math.max(0, b.minStockThreshold - b.quantity);
+      if (roundTo > 0) {
+        needed = Math.ceil(needed / roundTo) * roundTo;
+      }
+      return [
+        b.brand,
+        b.model,
+        b.type || "",
+        b.barcode,
+        b.quantity,
+        b.minStockThreshold,
+        needed
+      ];
+    });
 
     const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -92,35 +99,45 @@ export const ExternalBuy = () => {
   return (
     <div className="space-y-6">
         {/* Toolbar & Filters */}
-        <div className="bg-[#141414] p-4 rounded-xl border border-white/5 space-y-4">
-            <div className="flex flex-col md:flex-row gap-4">
+        <div className="bg-[#141414] p-6 rounded-2xl border border-white/5 space-y-6 shadow-xl relative overflow-hidden">
+            <div className="flex flex-col lg:flex-row gap-6">
                 <div className="flex-1">
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1 ml-1">Marca</label>
+                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 ml-1">Marca</label>
                     <select 
                         value={selectedBrand} 
                         onChange={e => setSelectedBrand(e.target.value)}
-                        className="w-full bg-black/40 text-white p-2.5 rounded-lg border border-white/10 focus:border-[#EC4899] outline-none"
+                        className="w-full bg-black/40 text-white p-3 rounded-xl border border-white/10 focus:border-[#EC4899]/50 outline-none transition-all"
                     >
                         <option value="">Todas as Marcas</option>
                         {brands.map((b: string) => <option key={b} value={b}>{b}</option>)}
                     </select>
                 </div>
                 <div className="flex-1">
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1 ml-1">Tipo</label>
+                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 ml-1">Tipo</label>
                     <select 
                         value={selectedType} 
                         onChange={e => setSelectedType(e.target.value)}
-                        className="w-full bg-black/40 text-white p-2.5 rounded-lg border border-white/10 focus:border-[#EC4899] outline-none"
+                        className="w-full bg-black/40 text-white p-3 rounded-xl border border-white/10 focus:border-[#EC4899]/50 outline-none transition-all"
                     >
                         <option value="">Todos os Tipos</option>
                         {types.map((t: string) => <option key={t} value={t}>{t}</option>)}
                     </select>
                 </div>
+                <div className="flex-1">
+                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 ml-1">Arredondar para (Múltiplos)</label>
+                    <input 
+                        type="number" 
+                        placeholder="Ex: 12 para dúzias"
+                        value={roundTo || ''}
+                        onChange={e => setRoundTo(Number(e.target.value))}
+                        className="w-full bg-black/40 text-white p-3 rounded-xl border border-white/10 focus:border-[#EC4899]/50 outline-none transition-all placeholder:text-gray-700"
+                    />
+                </div>
                 <div className="flex items-end">
                     <button 
                         onClick={exportCSV}
                         disabled={filteredList.length === 0}
-                        className="w-full md:w-auto px-6 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-30 text-white rounded-lg font-bold flex items-center justify-center transition-colors"
+                        className="w-full lg:w-auto px-8 py-3.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-30 text-white rounded-xl font-black uppercase tracking-widest text-xs flex items-center justify-center transition-all shadow-lg shadow-blue-500/20 active:scale-95"
                     >
                         <span className="material-icons text-sm mr-2">download</span>
                         Exportar CSV
@@ -139,7 +156,10 @@ export const ExternalBuy = () => {
                 </div>
             ) : (
                 filteredList.map((b: Battery) => {
-                    const needed = Math.max(0, b.minStockThreshold - b.quantity);
+                    let needed = Math.max(0, b.minStockThreshold - b.quantity);
+                    if (roundTo > 0) {
+                        needed = Math.ceil(needed / roundTo) * roundTo;
+                    }
                     const isDynamic = b.notes?.startsWith('dynamic:');
                     const dynamicRate = isDynamic ? b.notes?.split(':')[1] : null;
 

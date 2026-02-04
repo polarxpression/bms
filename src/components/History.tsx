@@ -1,21 +1,20 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { batteryService } from '../services/batteryService';
+import { HistoryAnalysis, type GroupingType } from '../utils/historyAnalysis';
 import type { HistoryEntry } from '../types';
 
 export const History = () => {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [grouping, setGrouping] = useState<GroupingType>('day');
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
 
   useEffect(() => {
     const load = async () => {
       try {
         const data = await batteryService.fetchHistory();
-        // Filter: out events only from map
-        const filtered = data.filter(entry => {
-            if (entry.type === 'out' && entry.source !== 'map') return false;
-            return true;
-        });
-        setHistory(filtered);
+        setHistory(data);
       } catch (err) {
         console.error(err);
       } finally {
@@ -25,53 +24,111 @@ export const History = () => {
     load();
   }, []);
 
-  const formatDate = (ts: any) => {
-    if (!ts) return '-';
-    const date = ts.toDate ? ts.toDate() : new Date(ts);
-    return date.toLocaleString('pt-BR');
-  };
+  const filteredHistory = useMemo(() => {
+    return history.filter(entry => {
+        // Core filter rule
+        if (entry.type === 'out' && entry.source !== 'map') return false;
+        
+        // Date filter
+        if (startDate || endDate) {
+            const ts = entry.timestamp?.toDate ? entry.timestamp.toDate() : new Date(entry.timestamp);
+            if (startDate && ts < new Date(startDate)) return false;
+            if (endDate) {
+                const end = new Date(endDate);
+                end.setHours(23, 59, 59, 999);
+                if (ts > end) return false;
+            }
+        }
+        return true;
+    });
+  }, [history, startDate, endDate]);
 
-  if (loading) return <div className="p-8 text-center text-gray-500">Carregando histórico...</div>;
+  const groupedData = useMemo(() => {
+    return HistoryAnalysis.group(filteredHistory, grouping);
+  }, [filteredHistory, grouping]);
+
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center py-20">
+        <div className="w-12 h-12 border-4 border-[#EC4899]/20 border-t-[#EC4899] rounded-full animate-spin mb-4"></div>
+        <p className="text-gray-500 font-bold animate-pulse">Analisando histórico...</p>
+    </div>
+  );
 
   return (
-    <div className="space-y-4">
-        <div className="bg-[#141414] rounded-xl border border-white/5 overflow-hidden">
-            <table className="w-full text-left border-collapse">
-                <thead>
-                    <tr className="bg-black/20 text-xs font-bold text-gray-400 uppercase tracking-wider">
-                        <th className="p-4">Data</th>
-                        <th className="p-4">Bateria</th>
-                        <th className="p-4">Tipo</th>
-                        <th className="p-4">Local</th>
-                        <th className="p-4">Qtd</th>
-                        <th className="p-4">Motivo</th>
-                        <th className="p-4">Origem</th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                    {history.map(entry => (
-                        <tr key={entry.id} className="hover:bg-white/5 transition-colors">
-                            <td className="p-4 text-xs text-gray-400 font-mono whitespace-nowrap">{formatDate(entry.timestamp)}</td>
-                            <td className="p-4 font-medium text-white">{entry.batteryName}</td>
-                            <td className="p-4">
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${entry.type === 'in' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
-                                    {entry.type === 'in' ? 'Entrada' : 'Saída'}
-                                </span>
-                            </td>
-                            <td className="p-4 text-xs text-gray-300 capitalize">{entry.location}</td>
-                            <td className="p-4 font-bold text-white">{entry.quantity}</td>
-                            <td className="p-4 text-xs text-gray-400 italic">{entry.reason}</td>
-                            <td className="p-4">
-                                <span className="text-[10px] bg-white/5 px-1.5 py-0.5 rounded text-gray-500 uppercase font-black">{entry.source}</span>
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-            {history.length === 0 && (
-                <div className="p-12 text-center text-gray-500">Nenhum registro encontrado.</div>
-            )}
+    <div className="space-y-8">
+        <div className="flex flex-col lg:flex-row gap-4 items-end bg-[#141414] p-6 rounded-3xl border border-white/5 shadow-xl">
+            <div className="flex-1 w-full">
+                <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 ml-1">Agrupar por</label>
+                <select 
+                    value={grouping}
+                    onChange={(e) => setGrouping(e.target.value as GroupingType)}
+                    className="w-full bg-black/40 text-white p-3 rounded-xl border border-white/10 focus:border-[#EC4899]/50 outline-none transition-all"
+                >
+                    <option value="day">Dia</option>
+                    <option value="month">Mês</option>
+                    <option value="trimester">Trimestre</option>
+                    <option value="semester">Semestre</option>
+                    <option value="year">Ano</option>
+                </select>
+            </div>
+            <div className="flex-[2] w-full grid grid-cols-2 gap-3">
+                <div>
+                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 ml-1">De</label>
+                    <input 
+                        type="date" 
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                        className="w-full bg-black/40 text-white p-3 rounded-xl border border-white/10 focus:border-[#EC4899]/50 outline-none transition-all"
+                    />
+                </div>
+                <div>
+                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 ml-1">Até</label>
+                    <input 
+                        type="date" 
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                        className="w-full bg-black/40 text-white p-3 rounded-xl border border-white/10 focus:border-[#EC4899]/50 outline-none transition-all"
+                    />
+                </div>
+            </div>
+            <button 
+                onClick={() => { setStartDate(''); setEndDate(''); }}
+                className="px-6 py-3 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white rounded-xl transition-all font-bold text-sm whitespace-nowrap"
+            >
+                Limpar Filtros
+            </button>
         </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {groupedData.map((group) => (
+                <div key={group.label} className="bg-[#141414] p-6 rounded-[2rem] border border-white/5 hover:border-white/10 transition-all group shadow-lg">
+                    <div className="flex items-center justify-between mb-6">
+                        <h3 className="text-lg font-black text-white tracking-tight">{group.label}</h3>
+                        <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
+                            <span className="material-icons text-gray-600">calendar_today</span>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-green-500/[0.03] p-4 rounded-2xl border border-green-500/10 group-hover:bg-green-500/[0.05] transition-colors">
+                            <p className="text-[10px] font-black text-green-500/60 uppercase tracking-widest mb-1">Entradas</p>
+                            <p className="text-2xl font-black text-green-400">+{group.ins}</p>
+                        </div>
+                        <div className="bg-red-500/[0.03] p-4 rounded-2xl border border-red-500/10 group-hover:bg-red-500/[0.05] transition-colors">
+                            <p className="text-[10px] font-black text-red-500/60 uppercase tracking-widest mb-1">Saídas</p>
+                            <p className="text-2xl font-black text-red-400">-{group.outs}</p>
+                        </div>
+                    </div>
+                </div>
+            ))}
+        </div>
+
+        {groupedData.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-20 bg-[#141414]/30 rounded-[2.5rem] border-2 border-dashed border-white/5">
+                <span className="material-icons text-5xl mb-3 text-gray-700">history_toggle_off</span>
+                <p className="text-gray-500 font-bold">Nenhum registro encontrado no período.</p>
+            </div>
+        )}
     </div>
   );
 };

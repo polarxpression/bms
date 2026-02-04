@@ -1,0 +1,8 @@
+---
+import MainLayout from '../layouts/MainLayout.astro';
+import { Notifications as NotificationsList } from '../components/Notifications';
+---
+
+<MainLayout title="Notificações">
+    <NotificationsList client:load />
+</MainLayout>

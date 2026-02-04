@@ -90,3 +90,13 @@ export interface AppSettings {
   daysToAnalyze: number;
   imgbbApiKey?: string;
 }
+
+export interface AppNotification {
+  id: string;
+  title: string;
+  message: string;
+  timestamp: any;
+  isRead: boolean;
+  type?: 'update' | 'reminder' | 'system';
+  actionUrl?: string;
+}
