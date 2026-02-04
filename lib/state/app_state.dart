@@ -82,52 +82,56 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> _checkScheduledNotifications() async {
-    final now = DateTime.now();
-    // Monday = 1
-    if (now.weekday == DateTime.monday) {
-      final todayStr = '${now.year}-${now.month}-${now.day}';
+    try {
+      final now = DateTime.now();
+      // Monday = 1
+      if (now.weekday == DateTime.monday) {
+        final todayStr = '${now.year}-${now.month}-${now.day}';
 
-      // Check last run from settings/local storage (using Firestore config for persistence across devices/restarts)
-      final configDoc = await _settingsCollection
-          .doc('notifications_run')
-          .get();
-      final data = configDoc.exists
-          ? configDoc.data() as Map<String, dynamic>
-          : {};
+        // Check last run from settings/local storage (using Firestore config for persistence across devices/restarts)
+        final configDoc = await _settingsCollection
+            .doc('notifications_run')
+            .get();
+        final data = configDoc.exists
+            ? configDoc.data() as Map<String, dynamic>
+            : {};
 
-      final lastWeeklyRun = data['lastWeeklyRun'] as String?;
-      final lastMonthlyRun = data['lastMonthlyRun'] as String?;
+        final lastWeeklyRun = data['lastWeeklyRun'] as String?;
+        final lastMonthlyRun = data['lastMonthlyRun'] as String?;
 
-      // 1. Weekly Map Update (Every Monday)
-      if (lastWeeklyRun != todayStr) {
-        await addNotification(
-          title: 'Atualizar Mapa',
-          message: 'Lembrete semanal: Por favor, atualize o mapa de baterias.',
-          type: 'reminder',
-        );
-        await _settingsCollection.doc('notifications_run').set({
-          'lastWeeklyRun': todayStr,
-        }, SetOptions(merge: true));
-      }
-
-      // 2. Monthly Buy (1st Monday of Month)
-      // Check if this is the first Monday of the month
-      // If day is <= 7, it's the first occurrence of this weekday in the month
-      if (now.day <= 7) {
-        // Construct a unique key for this month's run: YYYY-MM
-        final monthKey = '${now.year}-${now.month}';
-        if (lastMonthlyRun != monthKey) {
+        // 1. Weekly Map Update (Every Monday)
+        if (lastWeeklyRun != todayStr) {
           await addNotification(
-            title: 'Comprar Baterias',
-            message:
-                'Primeira segunda-feira do mês. Verifique o estoque e faça compras se necessário.',
+            title: 'Atualizar Mapa',
+            message: 'Lembrete semanal: Por favor, atualize o mapa de baterias.',
             type: 'reminder',
           );
           await _settingsCollection.doc('notifications_run').set({
-            'lastMonthlyRun': monthKey,
+            'lastWeeklyRun': todayStr,
           }, SetOptions(merge: true));
         }
+
+        // 2. Monthly Buy (1st Monday of Month)
+        // Check if this is the first Monday of the month
+        // If day is <= 7, it's the first occurrence of this weekday in the month
+        if (now.day <= 7) {
+          // Construct a unique key for this month's run: YYYY-MM
+          final monthKey = '${now.year}-${now.month}';
+          if (lastMonthlyRun != monthKey) {
+            await addNotification(
+              title: 'Comprar Baterias',
+              message:
+                  'Primeira segunda-feira do mês. Verifique o estoque e faça compras se necessário.',
+              type: 'reminder',
+            );
+            await _settingsCollection.doc('notifications_run').set({
+              'lastMonthlyRun': monthKey,
+            }, SetOptions(merge: true));
+          }
+        }
       }
+    } catch (e) {
+      debugPrint('Error checking scheduled notifications: $e');
     }
   }
 
@@ -195,6 +199,10 @@ class AppState extends ChangeNotifier {
       }).toList();
       _isLoading = false;
       notifyListeners();
+    }, onError: (e) {
+      debugPrint('Error loading batteries: $e');
+      _isLoading = false;
+      notifyListeners();
     });
 
     // Settings
@@ -222,6 +230,8 @@ class AppState extends ChangeNotifier {
               refreshAnalysis();
             }
           }
+        }, onError: (e) {
+          debugPrint('Error loading settings: $e');
         });
 
     // Maps List
@@ -244,6 +254,8 @@ class AppState extends ChangeNotifier {
       }
 
       notifyListeners();
+    }, onError: (e) {
+      debugPrint('Error loading maps: $e');
     });
 
     // Notifications
@@ -374,6 +386,8 @@ class AppState extends ChangeNotifier {
           }
           _batteryMap = newMap;
           notifyListeners();
+        }, onError: (e) {
+          debugPrint('Error listening to map cells: $e');
         });
   }
 
@@ -514,58 +528,62 @@ class AppState extends ChangeNotifier {
   Future<void> refreshAnalysis() async {
     if (_batteries.isEmpty) return;
 
-    final cutoff = DateTime.now().subtract(Duration(days: _daysToAnalyze));
+    try {
+      final cutoff = DateTime.now().subtract(Duration(days: _daysToAnalyze));
 
-    // Fetch OUT history for the last X days
-    final snapshot = await _historyCollection
-        .where('type', isEqualTo: 'out')
-        .where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(cutoff))
-        .get();
+      // Fetch OUT history for the last X days
+      final snapshot = await _historyCollection
+          .where('type', isEqualTo: 'out')
+          .where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(cutoff))
+          .get();
 
-    final Map<String, int> totalOuts = {};
+      final Map<String, int> totalOuts = {};
 
-    for (var doc in snapshot.docs) {
-      final data = doc.data() as Map<String, dynamic>;
-      final qty = data['quantity'] as int? ?? 0;
-      final bid = data['batteryId'] as String? ?? '';
-      final source = data['source'] as String? ?? '';
+      for (var doc in snapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        final qty = data['quantity'] as int? ?? 0;
+        final bid = data['batteryId'] as String? ?? '';
+        final source = data['source'] as String? ?? '';
 
-      // If OUT event, only count if source is MAP (as per requirement)
-      if (data['type'] == 'out' && source != 'map') continue;
+        // If OUT event, only count if source is MAP (as per requirement)
+        if (data['type'] == 'out' && source != 'map') continue;
 
-      // We only care about consumption (Sales/Usage), not transfers
-      // Transfers usually show as 'out' from Stock with reason 'restock'
-      // Adjustments can be 'adjustment'
-      final reason = data['reason'] as String? ?? '';
+        // We only care about consumption (Sales/Usage), not transfers
+        // Transfers usually show as 'out' from Stock with reason 'restock'
+        // Adjustments can be 'adjustment'
+        final reason = data['reason'] as String? ?? '';
 
-      // If reason is 'restock', it means it moved to Gondola, NOT sold yet.
-      // Real consumption is usually from Gondola (reason 'sale' or 'usage' or 'adjustment' if negative)
-      // Or from Stock if direct sale.
-      // Let's assume 'restock' is internal transfer.
-      if (reason == 'restock') continue;
+        // If reason is 'restock', it means it moved to Gondola, NOT sold yet.
+        // Real consumption is usually from Gondola (reason 'sale' or 'usage' or 'adjustment' if negative)
+        // Or from Stock if direct sale.
+        // Let's assume 'restock' is internal transfer.
+        if (reason == 'restock') continue;
 
-      if (bid.isNotEmpty) {
-        totalOuts[bid] = (totalOuts[bid] ?? 0) + qty;
+        if (bid.isNotEmpty) {
+          totalOuts[bid] = (totalOuts[bid] ?? 0) + qty;
+        }
       }
+
+      final Map<String, double> newConsumption = {};
+      // Calculate Monthly Rate
+      // If we analyze 90 days, monthly rate = total / 3
+      final months = _daysToAnalyze / 30.0;
+      if (months <= 0) return;
+
+      // We need to map battery IDs to their "Group" (Barcode) because external buy is grouped
+      // Actually, `externalBuyBatteries` groups them.
+      // We can just store per batteryId and aggregate later, OR aggregate here.
+      // Storing per batteryId is more flexible.
+
+      totalOuts.forEach((bid, qty) {
+        newConsumption[bid] = qty / months;
+      });
+
+      _monthlyConsumption = newConsumption;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error refreshing analysis: $e');
     }
-
-    final Map<String, double> newConsumption = {};
-    // Calculate Monthly Rate
-    // If we analyze 90 days, monthly rate = total / 3
-    final months = _daysToAnalyze / 30.0;
-    if (months <= 0) return;
-
-    // We need to map battery IDs to their "Group" (Barcode) because external buy is grouped
-    // Actually, `externalBuyBatteries` groups them.
-    // We can just store per batteryId and aggregate later, OR aggregate here.
-    // Storing per batteryId is more flexible.
-
-    totalOuts.forEach((bid, qty) {
-      newConsumption[bid] = qty / months;
-    });
-
-    _monthlyConsumption = newConsumption;
-    notifyListeners();
   }
 
   // Map Methods
