@@ -120,6 +120,32 @@ export const batteryService = {
     }
   },
 
+  adjustGondolaQuantity: async (battery: Battery, amount: number, source: string) => {
+    const ref = doc(db, COLLECTION_NAME, battery.id);
+    const currentGondola = battery.gondolaQuantity || 0;
+    const newGondola = Math.max(0, currentGondola + amount);
+    const limit = battery.gondolaLimit > 0 ? battery.gondolaLimit : 20;
+    const finalGondola = Math.min(newGondola, limit);
+
+    await updateDoc(ref, {
+      gondolaQuantity: finalGondola,
+      lastChanged: serverTimestamp(),
+    });
+
+    if (amount !== 0) {
+        await addDoc(collection(db, HISTORY_COLLECTION), {
+            batteryId: battery.id,
+            batteryName: battery.name || `${battery.brand} ${battery.model}`,
+            type: amount > 0 ? 'in' : 'out',
+            location: 'gondola',
+            quantity: Math.abs(amount),
+            reason: 'adjustment',
+            source: source,
+            timestamp: serverTimestamp(),
+        });
+    }
+  },
+
   moveToGondola: async (battery: Battery, amount: number) => {
     if (amount <= 0) return;
     const currentGondola = battery.gondolaQuantity || 0;
@@ -291,6 +317,37 @@ export const batteryService = {
       console.log(`Received ${snapshot.docs.length} maps`);
       callback(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as BatteryMap[]);
     }, (err) => console.error("Map Subscribe Error:", err));
+  },
+
+  createMap: async (name: string, purpose: string) => {
+    await addDoc(collection(db, MAPS_COLLECTION), {
+        name,
+        purpose,
+        createdAt: serverTimestamp(),
+    });
+  },
+
+  updateMap: async (id: string, name: string, purpose: string) => {
+    const ref = doc(db, MAPS_COLLECTION, id);
+    await updateDoc(ref, { name, purpose });
+  },
+
+  deleteMap: async (id: string) => {
+    const { writeBatch } = await import("firebase/firestore");
+    const batch = writeBatch(db);
+    
+    // Delete all cells in the subcollection
+    const cellsRef = collection(db, MAPS_COLLECTION, id, "cells");
+    const cellsSnapshot = await getDocs(cellsRef);
+    cellsSnapshot.forEach(doc => {
+        batch.delete(doc.ref);
+    });
+
+    // Delete the map itself
+    const mapRef = doc(db, MAPS_COLLECTION, id);
+    batch.delete(mapRef);
+
+    await batch.commit();
   },
 
   subscribeToMapCells: (mapId: string, callback: (cells: Record<string, string>) => void) => {
