@@ -54,15 +54,25 @@ export const CellDetailsModal = ({ battery, onClose, onAdjustGondola, onRemove, 
             <button onClick={onClose} className="text-gray-400 hover:text-white"><span className="material-icons">close</span></button>
           </div>
 
-          <div className="mt-6 flex justify-between">
-             <button onClick={onEdit} className="flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors text-sm font-semibold">
-                <span className="material-icons">edit</span>
-                Editar
-             </button>
-             <button onClick={onRemove} className="flex items-center gap-2 text-red-400 hover:text-red-300 transition-colors text-sm font-semibold">
-                 <span className="material-icons">delete_outline</span>
-                 Remover do Mapa
-             </button>
+          <div className="mt-4 flex flex-col gap-2">
+            <a 
+                href={`/history?q=${battery.barcode || battery.name}`}
+                className="w-full flex items-center justify-center gap-2 py-2 px-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-white transition-all text-sm font-bold"
+            >
+                <span className="material-icons text-sm">history</span>
+                Ver Histórico Individual
+            </a>
+
+            <div className="flex justify-between items-center mt-2">
+                <button onClick={onEdit} className="flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors text-sm font-semibold">
+                    <span className="material-icons">edit</span>
+                    Editar
+                </button>
+                <button onClick={onRemove} className="flex items-center gap-2 text-red-400 hover:text-red-300 transition-colors text-sm font-semibold">
+                    <span className="material-icons">delete_outline</span>
+                    Remover do Mapa
+                </button>
+            </div>
           </div>
 
         </div>
