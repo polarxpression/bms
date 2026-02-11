@@ -14,9 +14,9 @@ export const CellDetailsModal = ({ battery, onClose, onAdjustGondola, onRemove, 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center" onClick={onClose}>
       <div className="bg-[#1E1E1E] rounded-2xl shadow-xl w-full max-w-md border border-white/10" onClick={e => e.stopPropagation()}>
-        <div className="h-32 bg-black/20 rounded-t-2xl flex items-center justify-center">
+        <div className="h-32 bg-black/20 rounded-t-2xl flex items-center justify-center overflow-hidden">
           {battery.imageUrl ? (
-            <img src={battery.imageUrl} alt={battery.name} className="max-h-full object-contain p-4" />
+            <img src={battery.imageUrl} alt={battery.name} className="max-h-full max-w-full object-contain p-4" />
           ) : (
             <span className="material-icons text-gray-500 text-6xl">battery_std</span>
           )}
@@ -26,10 +26,12 @@ export const CellDetailsModal = ({ battery, onClose, onAdjustGondola, onRemove, 
           <p className="text-blue-400 font-semibold">{battery.brand} • {battery.model}</p>
 
           <div className="my-4 grid grid-cols-2 sm:grid-cols-3 gap-4 text-center">
-            <DetailBadge label="Tipo" value={battery.type} />
+            <DetailBadge label="Tipo" value={battery.type || 'N/A'} />
             <DetailBadge label="Pack" value={`x${battery.packSize}`} />
-            {battery.barcode && <DetailBadge label="EAN" value={battery.barcode} />}
             <DetailBadge label="Estoque" value={`${battery.quantity}`} />
+            {battery.voltage && <DetailBadge label="Voltagem" value={battery.voltage} />}
+            {battery.chemistry && <DetailBadge label="Química" value={battery.chemistry} />}
+            {battery.barcode && <DetailBadge label="EAN" value={battery.barcode} />}
           </div>
 
           <div className="my-4">
@@ -56,7 +58,7 @@ export const CellDetailsModal = ({ battery, onClose, onAdjustGondola, onRemove, 
 
           <div className="mt-4 flex flex-col gap-2">
             <a 
-                href={`/history?q=${battery.barcode || battery.name}`}
+                href={`/bms/history?q=${battery.barcode || battery.name}`}
                 className="w-full flex items-center justify-center gap-2 py-2 px-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-white transition-all text-sm font-bold"
             >
                 <span className="material-icons text-sm">history</span>

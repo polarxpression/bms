@@ -1,99 +1,119 @@
-import type { HistoryEntry } from "../types";
+import type { HistoryEntry, Battery } from "../types";
 
-export type GroupingType = 'day' | 'month' | 'trimester' | 'semester' | 'year';
-
-export interface GroupedEntry {
+export interface NestedGroup {
+  id: string;
   label: string;
   ins: number;
   outs: number;
-  date: Date;
+  battery?: Battery;
+  entries: HistoryEntry[];
+  subgroups: NestedGroup[];
+  type: 'brand' | 'model' | 'year' | 'month' | 'day';
 }
 
 export class HistoryAnalysis {
-  static group(entries: HistoryEntry[], type: GroupingType): GroupedEntry[] {
-    // Sort by date asc
-    const sorted = [...entries].sort((a, b) => {
-        const dateA = a.timestamp?.toDate ? a.timestamp.toDate() : new Date(a.timestamp);
-        const dateB = b.timestamp?.toDate ? b.timestamp.toDate() : new Date(b.timestamp);
-        return dateA.getTime() - dateB.getTime();
-    });
+  static buildHierarchy(entries: HistoryEntry[], batteries: Battery[], topLevel: 'brand' | 'model'): NestedGroup[] {
+    const batteryMap: Record<string, Battery> = {};
+    batteries.forEach(b => { batteryMap[b.id] = b; });
 
-    const groups: Record<string, { ins: number; outs: number; date: Date }> = {};
-
-    sorted.forEach(entry => {
-      const ts = entry.timestamp?.toDate ? entry.timestamp.toDate() : new Date(entry.timestamp);
+    // 1. Group by Top Level (Brand or Model)
+    const topGroups: Record<string, { entries: HistoryEntry[], battery?: Battery }> = {};
+    
+    entries.forEach(entry => {
+      const battery = batteryMap[entry.batteryId];
       let key = "";
-      let dateKey = new Date();
-
-      switch (type) {
-        case 'day':
-          key = ts.toISOString().split('T')[0];
-          dateKey = new Date(ts.getFullYear(), ts.getMonth(), ts.getDate());
-          break;
-        case 'month':
-          key = `${ts.getFullYear()}-${String(ts.getMonth() + 1).padStart(2, '0')}`;
-          dateKey = new Date(ts.getFullYear(), ts.getMonth(), 1);
-          break;
-        case 'trimester':
-          const trim = Math.floor(ts.getMonth() / 3) + 1;
-          key = `${ts.getFullYear()}-T${trim}`;
-          dateKey = new Date(ts.getFullYear(), (trim - 1) * 3, 1);
-          break;
-        case 'semester':
-          const sem = ts.getMonth() < 6 ? 1 : 2;
-          key = `${ts.getFullYear()}-S${sem}`;
-          dateKey = new Date(ts.getFullYear(), sem === 1 ? 0 : 6, 1);
-          break;
-        case 'year':
-          key = `${ts.getFullYear()}`;
-          dateKey = new Date(ts.getFullYear(), 0, 1);
-          break;
-      }
-
-      if (!groups[key]) {
-        groups[key] = { ins: 0, outs: 0, date: dateKey };
-      }
-
-      if (entry.type === 'in') {
-        groups[key].ins += entry.quantity;
+      if (topLevel === 'brand') {
+        key = battery?.brand || entry.batteryName.split(' ')[0] || 'Desconhecido';
       } else {
-        groups[key].outs += entry.quantity;
+        key = entry.batteryId; // Group by ID to be safe, label will be name
       }
+
+      if (!topGroups[key]) {
+        topGroups[key] = { entries: [], battery };
+      }
+      topGroups[key].entries.push(entry);
     });
 
-    const results = Object.entries(groups).map(([key, value]) => {
-      let label = "";
-      switch (type) {
-        case 'day':
-          label = value.date.toLocaleDateString('pt-BR');
-          break;
-        case 'month':
-          label = value.date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-          break;
-        case 'trimester':
-          const tYear = key.split('-')[0];
-          const tNum = key.split('-')[1].replace('T', '');
-          label = `${tNum}º Tri ${tYear}`;
-          break;
-        case 'semester':
-          const sYear = key.split('-')[0];
-          const sNum = key.split('-')[1].replace('S', '');
-          label = `${sNum}º Sem ${sYear}`;
-          break;
-        case 'year':
-          label = key;
-          break;
-      }
-
-      return {
-        label: label.charAt(0).toUpperCase() + label.slice(1),
-        ins: value.ins,
-        outs: value.outs,
-        date: value.date
+    return Object.entries(topGroups).map(([key, value]) => {
+      const label = topLevel === 'model' 
+        ? (value.battery?.name || value.entries[0].batteryName)
+        : key;
+        
+      const group: NestedGroup = {
+        id: `top_${key}`,
+        label,
+        battery: value.battery,
+        entries: value.entries,
+        type: topLevel,
+        ins: 0, outs: 0,
+        subgroups: this._groupByYear(value.entries, batteries)
       };
+      
+      // Calculate totals from entries
+      value.entries.forEach(e => {
+        if (e.type === 'in') group.ins += e.quantity;
+        else group.outs += e.quantity;
+      });
+
+      return group;
+    }).sort((a, b) => a.label.localeCompare(b.label));
+  }
+
+  private static _groupByYear(entries: HistoryEntry[], batteries: Battery[]): NestedGroup[] {
+    const years: Record<string, HistoryEntry[]> = {};
+    entries.forEach(e => {
+      const date = e.timestamp?.toDate ? e.timestamp.toDate() : new Date(e.timestamp);
+      const year = date.getFullYear().toString();
+      if (!years[year]) years[year] = [];
+      years[year].push(e);
     });
 
-    // Sort descending by date
-    return results.sort((a, b) => b.date.getTime() - a.date.getTime());
+    return Object.entries(years).map(([year, yearEntries]) => {
+      const group: NestedGroup = {
+        id: `year_${year}_${Math.random()}`,
+        label: year,
+        type: 'year',
+        ins: 0, outs: 0,
+        entries: yearEntries,
+        subgroups: this._groupByMonth(yearEntries)
+      };
+      yearEntries.forEach(e => {
+        if (e.type === 'in') group.ins += e.quantity;
+        else group.outs += e.quantity;
+      });
+      return group;
+    }).sort((a, b) => b.label.localeCompare(a.label));
+  }
+
+  private static _groupByMonth(entries: HistoryEntry[]): NestedGroup[] {
+    const months: Record<string, { name: string, entries: HistoryEntry[], sortKey: number }> = {};
+    entries.forEach(e => {
+      const date = e.timestamp?.toDate ? e.timestamp.toDate() : new Date(e.timestamp);
+      const monthNum = date.getMonth();
+      const monthName = date.toLocaleDateString('pt-BR', { month: 'long' });
+      if (!months[monthName]) {
+        months[monthName] = { name: monthName, entries: [], sortKey: monthNum };
+      }
+      months[monthName].entries.push(e);
+    });
+
+    return Object.values(months).map(m => {
+      const group: NestedGroup = {
+        id: `month_${m.name}_${Math.random()}`,
+        label: m.name.charAt(0).toUpperCase() + m.name.slice(1),
+        type: 'month',
+        ins: 0, outs: 0,
+        entries: m.entries,
+        subgroups: [] // We stop at month for now, entries will be shown in table
+      };
+      m.entries.forEach(e => {
+        if (e.type === 'in') group.ins += e.quantity;
+        else group.outs += e.quantity;
+      });
+      return group;
+    }).sort((a, b) => {
+        const monthsOrder = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+        return monthsOrder.indexOf(b.label.toLowerCase()) - monthsOrder.indexOf(a.label.toLowerCase());
+    });
   }
 }

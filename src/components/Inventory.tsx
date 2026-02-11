@@ -190,7 +190,11 @@ export const Inventory = () => {
                         return (
                             <tr 
                                 key={b.id} 
-                                className={`group transition-all duration-200 ${isSelected ? 'bg-[#EC4899]/10' : 'hover:bg-white/[0.02]'}`}
+                                className={`group transition-all duration-200 ${isSelected ? 'bg-[#EC4899]/10' : 'hover:bg-white/[0.02]'} cursor-pointer`}
+                                onClick={(e) => {
+                                    if ((e.target as HTMLElement).closest('input[type="checkbox"], button')) return;
+                                    openEdit(b);
+                                }}
                             >
                                 <td className="p-6 text-center">
                                     <label className="relative flex items-center justify-center cursor-pointer">
@@ -212,7 +216,14 @@ export const Inventory = () => {
                                         </div>
                                         <div>
                                             <div className="font-bold text-white text-sm group-hover:text-[#EC4899] transition-colors">{b.model}</div>
-                                            <div className="text-[10px] text-gray-500 font-mono tracking-wider">{b.barcode || 'SEM EAN'}</div>
+                                            <div className="text-[10px] text-gray-500 font-mono tracking-wider flex items-center gap-2">
+                                                {b.barcode || 'SEM EAN'}
+                                                {(b.voltage || b.chemistry) && (
+                                                    <span className="text-[#EC4899]/80 font-black uppercase tracking-tighter bg-[#EC4899]/5 px-1.5 py-0.5 rounded border border-[#EC4899]/10">
+                                                        {b.voltage} {b.chemistry}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 </td>

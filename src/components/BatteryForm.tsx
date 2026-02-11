@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, type FormEvent, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import type { Battery, AppSettings } from '../types';
 import { batteryService } from '../services/batteryService';
 import { imageUploadService } from '../services/imageUploadService';
@@ -24,6 +24,7 @@ export const BatteryForm = ({ battery, batteries = [], onClose }: Props) => {
     quantity: 0,
     gondolaQuantity: 0,
     gondolaLimit: 0,
+    packSize: 1,
     minStockThreshold: 0,
     useDefaultMinStock: true,
     barcode: '',
@@ -31,7 +32,9 @@ export const BatteryForm = ({ battery, batteries = [], onClose }: Props) => {
     notes: '',
     discontinued: false,
     imageUrl: '',
-    linkedBatteryId: ''
+    linkedBatteryId: '',
+    voltage: '',
+    chemistry: ''
   });
 
   const [uploading, setUploading] = useState(false);
@@ -46,7 +49,7 @@ export const BatteryForm = ({ battery, batteries = [], onClose }: Props) => {
 
   useEffect(() => {
     if (battery) {
-      setFormData(battery);
+      setFormData(prev => ({ ...prev, ...battery }));
     } else {
         // Use defaults for new battery
         setFormData(prev => ({
@@ -77,7 +80,7 @@ export const BatteryForm = ({ battery, batteries = [], onClose }: Props) => {
     return stockBatteries.filter(b => SearchQueryParser.matches(b, pickerQuery));
   }, [stockBatteries, pickerQuery]);
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       if (battery && battery.id) {
@@ -193,6 +196,7 @@ export const BatteryForm = ({ battery, batteries = [], onClose }: Props) => {
                     <FormInput label="Marca" name="brand" list="brands" value={formData.brand} onChange={handleChange} required />
                     <FormInput label="Modelo" name="model" value={formData.model} onChange={handleChange} required />
                     <FormInput label="Tipo / Categoria" name="type" list="types" value={formData.type} onChange={handleChange} />
+                    <FormInput label="Pack Size" name="packSize" type="number" value={formData.packSize} onChange={handleChange} />
                     <FormInput label="EAN / Código de Barras" name="barcode" value={formData.barcode} onChange={handleChange} icon="qr_code" />
                     
                     <datalist id="brands">
@@ -259,6 +263,11 @@ export const BatteryForm = ({ battery, batteries = [], onClose }: Props) => {
                     className="w-full bg-black/40 text-white p-4 rounded-2xl border border-white/5 focus:border-[#EC4899]/50 outline-none transition-all resize-none text-sm placeholder:text-gray-700 shadow-inner"
                     placeholder="Detalhes sobre lote, fornecedor ou características específicas..."
                 ></textarea>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <FormInput label="Voltagem" name="voltage" value={formData.voltage} onChange={handleChange} />
+                <FormInput label="Química" name="chemistry" value={formData.chemistry} onChange={handleChange} />
             </div>
 
             <div className="flex items-center justify-between p-5 bg-red-500/[0.03] rounded-2xl border border-red-500/10">

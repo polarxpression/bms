@@ -71,6 +71,22 @@ export const batteryService = {
     });
   },
 
+  fetchBatteries: async () => {
+    const q = query(collection(db, COLLECTION_NAME));
+    const snapshot = await getDocs(q);
+    const batteries = snapshot.docs.map(doc => {
+      const data = doc.data();
+      const name = data.name || `${data.brand || ''} ${data.model || ''}`.trim() || 'Item sem nome';
+      return {
+        id: doc.id,
+        ...data,
+        name
+      };
+    }) as Battery[];
+    batteries.sort((a, b) => (a.brand || '').localeCompare(b.brand || '') || (a.model || '').localeCompare(b.model || ''));
+    return batteries;
+  },
+
   updateBattery: async (id: string, data: Partial<Battery>) => {
     const ref = doc(db, COLLECTION_NAME, id);
     await updateDoc(ref, {

@@ -43,7 +43,10 @@ const BatteryCard = ({ battery }: { battery: Battery }) => {
         </div>
         <div className="flex justify-between items-center">
             <span className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Tipo</span>
-            <span className="text-xs font-bold text-gray-400">{battery.type || 'BATERIA'}</span>
+            <span className="text-xs font-bold text-gray-400">
+                {battery.type || 'BATERIA'}
+                {(battery.voltage || battery.chemistry) && ` (${battery.voltage || ''} ${battery.chemistry || ''})`}
+            </span>
         </div>
         <div className="bg-black/20 p-2 rounded-xl border border-white/5 flex items-center justify-between">
             <span className="material-icons text-gray-600 text-sm">qr_code</span>

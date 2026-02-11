@@ -4,6 +4,7 @@ import type { Battery, BatteryMap } from '../types';
 import { CellDetailsModal } from './CellDetailsModal';
 import { MapManagerModal } from './MapManagerModal';
 import { BatteryPickerModal } from './BatteryPickerModal';
+import { BatteryForm } from './BatteryForm';
 
 const CELL_SIZE = 120;
 const CELL_SPACING = 8;
@@ -14,14 +15,13 @@ export const MapComponent = () => {
   const [currentMap, setCurrentMap] = useState<BatteryMap | null>(null);
   const [cells, setCells] = useState<Record<string, string>>({}); // "x,y" -> batteryId
   const [batteries, setBatteries] = useState<Battery[]>([]);
-  const [loading, setLoading] = useState(true);
   
   // Modal State
   const [selectedCell, setSelectedCell] = useState<{ x: number; y: number; battery: Battery } | null>(null);
   const [showMapManager, setShowMapManager] = useState(false);
   const [pickerTargetCell, setPickerTargetCell] = useState<{x: number, y: number} | null>(null);
   const [highlightedBatteryId, setHighlightedBatteryId] = useState<string | null>(null);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isFormOpen, setIsFormOpen] = useState(false);
 
 
   // Viewport State
@@ -41,7 +41,6 @@ export const MapComponent = () => {
         } else if (data.length > 0 && !currentMap) {
             setCurrentMap(data[0]);
         }
-        setLoading(false);
     });
     return () => {
         unsubBatteries();
@@ -226,8 +225,7 @@ export const MapComponent = () => {
 
   const handleEdit = () => {
       if (!selectedCell) return;
-      // TODO: Implement battery editing form/modal
-      alert(`Editing ${selectedCell.battery.name}`);
+      setIsFormOpen(true);
   };
 
   const handlePlaceBattery = async (batteryId: string) => {
@@ -313,9 +311,9 @@ export const MapComponent = () => {
                             >
                                 <div className="w-full h-full p-2 flex flex-col items-center justify-center pointer-events-none">
                                     <span className="text-[10px] font-black text-blue-400 uppercase truncate w-full text-center">{battery.brand} • {battery.type}</span>
-                                    <div className="flex-1 flex items-center justify-center w-full my-1">
+                                    <div className="flex-1 flex items-center justify-center w-full my-1 overflow-hidden">
                                         {battery.imageUrl ? (
-                                            <img src={battery.imageUrl} className="max-h-full object-contain" />
+                                            <img src={battery.imageUrl} className="max-h-full max-w-full object-contain" />
                                         ) : (
                                             <span className="material-icons text-gray-600 text-3xl">battery_std</span>
                                         )}
@@ -378,6 +376,13 @@ export const MapComponent = () => {
                 batteries={batteries}
                 onClose={() => setPickerTargetCell(null)}
                 onSelect={handlePlaceBattery}
+            />
+        )}
+        {isFormOpen && selectedCell && (
+            <BatteryForm 
+                battery={selectedCell.battery}
+                batteries={batteries}
+                onClose={() => setIsFormOpen(false)}
             />
         )}
     </div>

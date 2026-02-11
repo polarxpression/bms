@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState } from 'react';
 import { batteryService } from '../services/batteryService';
 import type { AppSettings } from '../types';
 
@@ -19,7 +19,7 @@ export const Settings = () => {
     return () => unsub();
   }, []);
 
-  const handleSave = async (e: FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     try {
@@ -34,8 +34,9 @@ export const Settings = () => {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setSettings((prev: AppSettings) => ({ ...prev, [name]: Number(value) }));
+    const { name, value, type } = e.target;
+    const val = type === 'number' ? Number(value) : value;
+    setSettings((prev: AppSettings) => ({ ...prev, [name]: val }));
   };
 
   if (loading) return <div className="p-8 text-center text-gray-500">Carregando configurações...</div>;
@@ -49,6 +50,22 @@ export const Settings = () => {
             </h2>
 
             <div className="space-y-4">
+                <div>
+                    <label className="block text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-3 ml-1">Integração ImgBB</label>
+                    <div className="relative group">
+                        <span className="material-icons absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-pink-500 transition-colors">vpn_key</span>
+                        <input 
+                            type="password" 
+                            name="imgbbApiKey" 
+                            value={settings.imgbbApiKey || ''} 
+                            onChange={(e) => setSettings(prev => ({ ...prev, imgbbApiKey: e.target.value }))}
+                            placeholder="Chave da API para upload de imagens..."
+                            className="w-full bg-black/40 text-white pl-12 pr-4 py-3.5 rounded-2xl border border-white/5 focus:border-pink-500 outline-none transition-all placeholder:text-gray-700 font-mono text-sm" 
+                        />
+                    </div>
+                    <p className="text-[10px] text-gray-600 mt-2 ml-1">Obtenha sua chave em <a href="https://api.imgbb.com/" target="_blank" className="text-pink-500 hover:underline">api.imgbb.com</a></p>
+                </div>
+
                 <div>
                     <label className="block text-xs font-black text-gray-500 uppercase tracking-widest mb-2 ml-1">Capacidade Padrão da Gôndola</label>
                     <input 
