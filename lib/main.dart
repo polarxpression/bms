@@ -5,6 +5,7 @@ import 'package:bms/firebase_options.dart';
 import 'package:bms/state/app_state.dart';
 import 'package:bms/ui/main_layout.dart';
 import 'package:bms/core/services/notification_service.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 void main() {
   // Catch errors at the very root level
@@ -41,7 +42,10 @@ class _AppRootState extends State<AppRoot> {
         options: DefaultFirebaseOptions.currentPlatform,
       );
 
-      // 2. Initialize Notifications (non-blocking, but we start it here)
+      // 2. Initialize Date Formatting
+      await initializeDateFormatting('pt_BR', null);
+
+      // 3. Initialize Notifications (non-blocking, but we start it here)
       // We don't await this to block UI, but we log errors if they happen
       NotificationService().init().catchError((e) {
         debugPrint('Notification Service Error: $e');

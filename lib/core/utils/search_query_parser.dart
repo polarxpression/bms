@@ -2,13 +2,13 @@ import 'package:diacritic/diacritic.dart';
 import 'package:bms/core/models/battery.dart';
 
 class SearchQueryParser {
-  static bool matches(Battery b, String query) {
+  static bool matches(dynamic item, String query) {
     if (query.trim().isEmpty) return true;
 
     List<String> tokens = _tokenize(query);
 
     for (String token in tokens) {
-      if (!_evaluateToken(b, token)) {
+      if (!_evaluateToken(item, token)) {
         return false;
       }
     }
@@ -48,39 +48,39 @@ class SearchQueryParser {
     return tokens;
   }
 
-  static bool _evaluateToken(Battery b, String token) {
+  static bool _evaluateToken(dynamic item, String token) {
     token = token.trim();
     if (token.isEmpty) return true;
 
     if (token.startsWith('-')) {
-      return !_evaluateToken(b, token.substring(1));
+      return !_evaluateToken(item, token.substring(1));
     }
 
     if (token.startsWith('(') && token.endsWith(')')) {
       String content = token.substring(1, token.length - 1);
       List<String> orParts = content.split('~');
       for (String part in orParts) {
-        if (_evaluateToken(b, part)) return true;
+        if (_evaluateToken(item, part)) return true;
       }
       return false;
     }
 
     if (token.length >= 2 && token.startsWith('"') && token.endsWith('"')) {
       return _matchAnyField(
-        b,
+        item,
         token.substring(1, token.length - 1),
         isLiteral: true,
       );
     }
 
     if (token.contains(':')) {
-      return _evaluateMetatag(b, token);
+      return _evaluateMetatag(item, token);
     }
 
-    return _matchAnyField(b, token);
+    return _matchAnyField(item, token);
   }
 
-  static bool _evaluateMetatag(Battery b, String token) {
+  static bool _evaluateMetatag(dynamic item, String token) {
     int colonIndex = token.indexOf(':');
     String key = removeDiacritics(token.substring(0, colonIndex).toLowerCase());
     String expression = token.substring(colonIndex + 1).toLowerCase();
@@ -112,48 +112,63 @@ class SearchQueryParser {
       }
     }
 
-    // NEW: Added aliases for gondola and stock searches
-    if (['qty', 'quantity', 'count', 'estoque', 'stock'].contains(key)) {
-      return _compareInt(b.quantity, op, int.tryParse(valStr) ?? 0);
+    int? valInt = int.tryParse(valStr);
+
+    if (['qty', 'quantity', 'count', 'estoque', 'stock', 'qtd'].contains(key)) {
+      return _compareInt(_getProperty(item, 'quantity') ?? 0, op, valInt ?? 0);
     }
     if (['gondola', 'gondolaqty', 'display'].contains(key)) {
-      return _compareInt(b.gondolaQuantity, op, int.tryParse(valStr) ?? 0);
+      return _compareInt(_getProperty(item, 'gondolaQuantity') ?? 0, op, valInt ?? 0);
     }
     if (['limit', 'gondolalimit', 'max'].contains(key)) {
-      return _compareInt(b.gondolaLimit, op, int.tryParse(valStr) ?? 0);
+      return _compareInt(_getProperty(item, 'gondolaLimit') ?? 0, op, valInt ?? 0);
     }
     if (['pack', 'packsize'].contains(key)) {
-      return _compareInt(b.packSize, op, int.tryParse(valStr) ?? 0);
+      return _compareInt(_getProperty(item, 'packSize') ?? 0, op, valInt ?? 0);
     }
 
     String? fieldVal;
-    if (key == 'brand' || key == 'marca') {
-      fieldVal = b.brand;
-    }
-    if (key == 'model' || key == 'modelo') {
-      fieldVal = b.model;
-    }
-    if (key == 'type' || key == 'tipo') {
-      fieldVal = b.type;
-    }
-    if (key == 'barcode' || key == 'ean' || key == 'code') {
-      fieldVal = b.barcode;
-    }
-    if (key == 'loc' || key == 'location' || key == 'local') {
-      fieldVal = b.location;
-    }
-    if (key == 'volt' || key == 'voltage') {
-      fieldVal = b.voltage;
-    }
-    if (key == 'chem' || key == 'chemistry') {
-      fieldVal = b.chemistry;
-    }
+    if (key == 'brand' || key == 'marca') fieldVal = _getProperty(item, 'brand');
+    if (key == 'model' || key == 'modelo') fieldVal = _getProperty(item, 'model');
+    if (key == 'type' || key == 'tipo') fieldVal = _getProperty(item, 'type');
+    if (key == 'barcode' || key == 'ean' || key == 'code') fieldVal = _getProperty(item, 'barcode');
+    if (key == 'loc' || key == 'location' || key == 'local') fieldVal = _getProperty(item, 'location');
+    if (key == 'volt' || key == 'voltage') fieldVal = _getProperty(item, 'voltage');
+    if (key == 'chem' || key == 'chemistry') fieldVal = _getProperty(item, 'chemistry');
+    
+    // History specific
+    if (key == 'reason' || key == 'motivo') fieldVal = _getProperty(item, 'reason');
+    if (key == 'source' || key == 'fonte') fieldVal = _getProperty(item, 'source');
+    if (key == 'battery' || key == 'bateria') fieldVal = _getProperty(item, 'batteryName');
+    if (key == 'movement' || key == 'movimento') fieldVal = _getProperty(item, 'movement');
 
     if (fieldVal != null) {
       return _matchString(fieldVal, valStr, isLiteral: isLiteral);
     }
 
     return false;
+  }
+
+  static dynamic _getProperty(dynamic item, String prop) {
+    if (item is Map) return item[prop];
+    if (item is Battery) {
+        switch(prop) {
+            case 'quantity': return item.quantity;
+            case 'gondolaQuantity': return item.gondolaQuantity;
+            case 'gondolaLimit': return item.gondolaLimit;
+            case 'packSize': return item.packSize;
+            case 'brand': return item.brand;
+            case 'model': return item.model;
+            case 'type': return item.type;
+            case 'barcode': return item.barcode;
+            case 'location': return item.location;
+            case 'voltage': return item.voltage;
+            case 'chemistry': return item.chemistry;
+            case 'name': return item.name;
+            case 'notes': return item.notes;
+        }
+    }
+    return null;
   }
 
   static bool _compareInt(int actual, String op, int target) {
@@ -172,22 +187,25 @@ class SearchQueryParser {
   }
 
   static bool _matchAnyField(
-    Battery b,
+    dynamic item,
     String pattern, {
     bool isLiteral = false,
   }) {
-    List<String> haystack = [
-      b.name,
-      b.brand,
-      b.model,
-      b.type,
-      b.barcode,
-      b.location,
-      b.notes,
-      b.voltage,
-      b.chemistry,
+    List<String?> haystack = [
+      _getProperty(item, 'name'),
+      _getProperty(item, 'batteryName'),
+      _getProperty(item, 'brand'),
+      _getProperty(item, 'model'),
+      _getProperty(item, 'type'),
+      _getProperty(item, 'barcode'),
+      _getProperty(item, 'location'),
+      _getProperty(item, 'notes'),
+      _getProperty(item, 'voltage'),
+      _getProperty(item, 'chemistry'),
+      _getProperty(item, 'reason'),
+      _getProperty(item, 'source'),
     ];
-    return haystack.any((s) => _matchString(s, pattern, isLiteral: isLiteral));
+    return haystack.any((s) => s != null && _matchString(s, pattern, isLiteral: isLiteral));
   }
 
   static bool _matchString(
@@ -195,7 +213,6 @@ class SearchQueryParser {
     String pattern, {
     bool isLiteral = false,
   }) {
-    // Normalize both to remove diacritics
     text = removeDiacritics(text.toLowerCase());
     pattern = removeDiacritics(pattern.toLowerCase().replaceAll('_', ' '));
 

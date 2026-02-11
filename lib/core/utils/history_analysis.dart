@@ -1,119 +1,216 @@
 import 'package:bms/core/models/history_entry.dart';
+import 'package:bms/core/models/battery.dart';
 import 'package:intl/intl.dart';
 
-enum GroupingType { day, month, trimester, semester, year }
+enum GroupingType { model, brand, year, month }
 
-class GroupedEntry {
+class HierarchicalGroup {
+  final String id;
   final String label;
-  final int ins;
-  final int outs;
-  final DateTime date;
+  int ins;
+  int outs;
+  final Battery? battery;
+  final List<HistoryEntry> entries;
+  final List<HierarchicalGroup> subgroups;
+  final GroupingType type;
 
-  GroupedEntry({
+  HierarchicalGroup({
+    required this.id,
     required this.label,
-    required this.ins,
-    required this.outs,
-    required this.date,
+    this.ins = 0,
+    this.outs = 0,
+    this.battery,
+    required this.entries,
+    required this.subgroups,
+    required this.type,
   });
 }
 
 class HistoryAnalysis {
-  static List<GroupedEntry> group(
+  static List<HierarchicalGroup> buildHierarchy(
     List<HistoryEntry> entries,
-    GroupingType type,
+    List<Battery> batteries,
+    GroupingType topLevel,
   ) {
-    // Sort by date
-    entries.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+    final Map<String, Battery> batteryMap = {
+      for (var b in batteries) b.id: b,
+    };
 
-    final Map<String, _Aggregator> groups = {};
+    // 1. Group by Top Level (Brand or Model)
+    final Map<String, List<HistoryEntry>> topGroups = {};
 
     for (var entry in entries) {
+      final battery = batteryMap[entry.batteryId];
       String key;
-      DateTime dateKey;
-
-      switch (type) {
-        case GroupingType.day:
-          key = DateFormat('yyyy-MM-dd').format(entry.timestamp);
-          dateKey = DateTime(
-            entry.timestamp.year,
-            entry.timestamp.month,
-            entry.timestamp.day,
-          );
-          break;
-        case GroupingType.month:
-          key = DateFormat('yyyy-MM').format(entry.timestamp);
-          dateKey = DateTime(entry.timestamp.year, entry.timestamp.month);
-          break;
-        case GroupingType.trimester:
-          final trim = ((entry.timestamp.month - 1) / 3).floor() + 1;
-          key = '${entry.timestamp.year}-T$trim';
-          dateKey = DateTime(entry.timestamp.year, (trim - 1) * 3 + 1);
-          break;
-        case GroupingType.semester:
-          final sem = entry.timestamp.month <= 6 ? 1 : 2;
-          key = '${entry.timestamp.year}-S$sem';
-          dateKey = DateTime(entry.timestamp.year, sem == 1 ? 1 : 7);
-          break;
-        case GroupingType.year:
-          key = DateFormat('yyyy').format(entry.timestamp);
-          dateKey = DateTime(entry.timestamp.year);
-          break;
-      }
-
-      if (!groups.containsKey(key)) {
-        groups[key] = _Aggregator(date: dateKey);
-      }
-
-      if (entry.type == 'in') {
-        groups[key]!.ins += entry.quantity;
+      if (topLevel == GroupingType.brand) {
+        key = battery?.brand ?? entry.batteryName.split(' ')[0];
+        if (key.isEmpty) key = 'Desconhecido';
       } else {
-        groups[key]!.outs += entry.quantity;
+        key = entry.batteryId; // Group by ID, label will be name
       }
+
+      if (!topGroups.containsKey(key)) {
+        topGroups[key] = [];
+      }
+      topGroups[key]!.add(entry);
     }
 
-    // Convert map to list
-    final results = groups.entries.map((e) {
-      String label;
-      switch (type) {
-        case GroupingType.day:
-          label = DateFormat('dd/MM/yyyy').format(e.value.date);
-          break;
-        case GroupingType.month:
-          label = DateFormat('MMM yyyy', 'pt_BR').format(e.value.date);
-          break;
-        case GroupingType.trimester:
-          final trim = e.key.split('-')[1];
-          final year = e.key.split('-')[0];
-          label = '${trim.replaceAll("T", "")}º Tri $year';
-          break;
-        case GroupingType.semester:
-          final sem = e.key.split('-')[1];
-          final year = e.key.split('-')[0];
-          label = '${sem.replaceAll("S", "")}º Sem $year';
-          break;
-        case GroupingType.year:
-          label = e.key;
-          break;
+    final results = topGroups.entries.map((e) {
+      final key = e.key;
+      final value = e.value;
+      final battery = batteryMap[value[0].batteryId];
+
+      final label = topLevel == GroupingType.model
+          ? (battery?.name ?? value[0].batteryName)
+          : key;
+
+      final group = HierarchicalGroup(
+        id: 'top_$key',
+        label: label,
+        battery: battery,
+        entries: value,
+        type: topLevel,
+        subgroups: topLevel == GroupingType.brand
+            ? _groupByModel(value, batteryMap)
+            : _groupByYear(value),
+      );
+
+      // Calculate totals
+      for (var entry in value) {
+        if (entry.type == 'in') {
+          group.ins += entry.quantity;
+        } else {
+          group.outs += entry.quantity;
+        }
       }
 
-      return GroupedEntry(
-        label: label,
-        ins: e.value.ins,
-        outs: e.value.outs,
-        date: e.value.date,
-      );
+      return group;
     }).toList();
 
-    // Sort descending by date
-    results.sort((a, b) => b.date.compareTo(a.date));
+    results.sort((a, b) => a.label.compareTo(b.label));
+    return results;
+  }
+
+  static List<HierarchicalGroup> _groupByModel(
+    List<HistoryEntry> entries,
+    Map<String, Battery> batteryMap,
+  ) {
+    final Map<String, List<HistoryEntry>> models = {};
+    for (var e in entries) {
+      final id = e.batteryId;
+      if (!models.containsKey(id)) models[id] = [];
+      models[id]!.add(e);
+    }
+
+    final results = models.entries.map((e) {
+      final id = e.key;
+      final modelEntries = e.value;
+      final battery = batteryMap[id];
+
+      final group = HierarchicalGroup(
+        id: 'model_$id',
+        label: battery?.name ?? modelEntries[0].batteryName,
+        type: GroupingType.model,
+        battery: battery,
+        entries: modelEntries,
+        subgroups: _groupByYear(modelEntries),
+      );
+
+      for (var entry in modelEntries) {
+        if (entry.type == 'in') {
+          group.ins += entry.quantity;
+        } else {
+          group.outs += entry.quantity;
+        }
+      }
+      return group;
+    }).toList();
+
+    results.sort((a, b) => a.label.compareTo(b.label));
+    return results;
+  }
+
+  static List<HierarchicalGroup> _groupByYear(List<HistoryEntry> entries) {
+    final Map<String, List<HistoryEntry>> years = {};
+    for (var e in entries) {
+      final year = e.timestamp.year.toString();
+      if (!years.containsKey(year)) years[year] = [];
+      years[year]!.add(e);
+    }
+
+    final results = years.entries.map((e) {
+      final year = e.key;
+      final yearEntries = e.value;
+
+      final group = HierarchicalGroup(
+        id: 'year_$year',
+        label: year,
+        type: GroupingType.year,
+        entries: yearEntries,
+        subgroups: _groupByMonth(yearEntries),
+      );
+
+      for (var entry in yearEntries) {
+        if (entry.type == 'in') {
+          group.ins += entry.quantity;
+        } else {
+          group.outs += entry.quantity;
+        }
+      }
+      return group;
+    }).toList();
+
+    results.sort((a, b) => b.label.compareTo(a.label));
+    return results;
+  }
+
+  static List<HierarchicalGroup> _groupByMonth(List<HistoryEntry> entries) {
+    final Map<int, List<HistoryEntry>> months = {};
+    for (var e in entries) {
+      final month = e.timestamp.month;
+      if (!months.containsKey(month)) months[month] = [];
+      months[month]!.add(e);
+    }
+
+    final results = months.entries.map((e) {
+      final monthNum = e.key;
+      final monthEntries = e.value;
+      final date = DateTime(monthEntries[0].timestamp.year, monthNum);
+      final monthName = DateFormat('MMMM', 'pt_BR').format(date);
+
+      final group = HierarchicalGroup(
+        id: 'month_$monthName',
+        label: monthName[0].toUpperCase() + monthName.substring(1),
+        type: GroupingType.month,
+        entries: monthEntries,
+        subgroups: [], // Stop at month
+      );
+
+      for (var entry in monthEntries) {
+        if (entry.type == 'in') {
+          group.ins += entry.quantity;
+        } else {
+          group.outs += entry.quantity;
+        }
+      }
+      return group;
+    }).toList();
+
+    results.sort((a, b) {
+      // Sort by month number descending
+      final monthA = months.keys.firstWhere((k) {
+        final date = DateTime(2000, k);
+        final name = DateFormat('MMMM', 'pt_BR').format(date);
+        return (name[0].toUpperCase() + name.substring(1)) == a.label;
+      }, orElse: () => 0);
+      final monthB = months.keys.firstWhere((k) {
+        final date = DateTime(2000, k);
+        final name = DateFormat('MMMM', 'pt_BR').format(date);
+        return (name[0].toUpperCase() + name.substring(1)) == b.label;
+      }, orElse: () => 0);
+      return monthB.compareTo(monthA);
+    });
 
     return results;
   }
-}
-
-class _Aggregator {
-  int ins = 0;
-  int outs = 0;
-  final DateTime date;
-  _Aggregator({required this.date});
 }
