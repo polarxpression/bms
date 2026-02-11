@@ -46,7 +46,9 @@ export class HistoryAnalysis {
         entries: value.entries,
         type: topLevel,
         ins: 0, outs: 0,
-        subgroups: this._groupByYear(value.entries, batteries)
+        subgroups: topLevel === 'brand'
+            ? this._groupByModel(value.entries, batteries)
+            : this._groupByYear(value.entries, batteries)
       };
       
       // Calculate totals from entries
@@ -56,6 +58,35 @@ export class HistoryAnalysis {
       });
 
       return group;
+    }).sort((a, b) => a.label.localeCompare(b.label));
+  }
+
+  private static _groupByModel(entries: HistoryEntry[], batteries: Battery[]): NestedGroup[] {
+    const batteryMap: Record<string, Battery> = {};
+    batteries.forEach(b => { batteryMap[b.id] = b; });
+
+    const models: Record<string, HistoryEntry[]> = {};
+    entries.forEach(e => {
+        if (!models[e.batteryId]) models[e.batteryId] = [];
+        models[e.batteryId].push(e);
+    });
+
+    return Object.entries(models).map(([id, modelEntries]) => {
+        const battery = batteryMap[id];
+        const group: NestedGroup = {
+            id: `model_${id}`,
+            label: battery?.name || modelEntries[0].batteryName,
+            type: 'model',
+            battery: battery,
+            ins: 0, outs: 0,
+            entries: modelEntries,
+            subgroups: this._groupByYear(modelEntries, batteries)
+        };
+        modelEntries.forEach(e => {
+            if (e.type === 'in') group.ins += e.quantity;
+            else group.outs += e.quantity;
+        });
+        return group;
     }).sort((a, b) => a.label.localeCompare(b.label));
   }
 

@@ -8,7 +8,7 @@ export const History = () => {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [batteries, setBatteries] = useState<Battery[]>([]);
   const [loading, setLoading] = useState(true);
-  const [topLevelGrouping, setTopLevelGrouping] = useState<'model' | 'brand'>('model');
+  const [topLevelGrouping, setTopLevelGrouping] = useState<'model' | 'brand'>('brand');
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
