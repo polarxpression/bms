@@ -2,8 +2,8 @@ name: Release
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - 'v*'
 
 jobs:
   build-android:
@@ -66,7 +66,8 @@ jobs:
       - name: Create Installer
         run: |
           # Extract version from tag (remove 'v' prefix)
-          $VERSION = "${{ github.ref_name }}".Substring(1)
+          $TAG = "${{ github.ref_name }}"
+          $VERSION = $TAG.Substring(1)
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DMyAppVersion="$VERSION" windows/setup.iss
         shell: powershell
 
@@ -101,6 +102,8 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
           files: |
             bms-android.apk
             bms_setup.exe
