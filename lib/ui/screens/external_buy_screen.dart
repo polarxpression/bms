@@ -206,7 +206,7 @@ class _ExternalBuyScreenState extends State<ExternalBuyScreen> {
                                 Row(
                                   children: [
                                     Text(
-                                      'Estoque: ${b.quantity}  Min: ${b.minStockThreshold}',
+                                      'Gôndolas: ${b.gondolaQuantity}/${b.gondolaLimit}  Reserva: ${b.quantity - b.gondolaQuantity}',
                                       style: TextStyle(
                                         color: Colors.grey[400],
                                         fontSize: 12,

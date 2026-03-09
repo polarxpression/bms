@@ -32,6 +32,9 @@ class HistoryAnalysis {
     List<Battery> batteries,
     GroupingType topLevel,
   ) {
+    // 0. Group entries by 5-minute intervals to avoid "16 outs in 5 minutes" as separate lines
+    final groupedEntries = _groupEntriesByTime(entries);
+
     final Map<String, Battery> batteryMap = {
       for (var b in batteries) b.id: b,
     };
@@ -39,7 +42,7 @@ class HistoryAnalysis {
     // 1. Group by Top Level (Brand or Model)
     final Map<String, List<HistoryEntry>> topGroups = {};
 
-    for (var entry in entries) {
+    for (var entry in groupedEntries) {
       final battery = batteryMap[entry.batteryId];
       String key;
       if (topLevel == GroupingType.brand) {
@@ -89,6 +92,47 @@ class HistoryAnalysis {
 
     results.sort((a, b) => a.label.compareTo(b.label));
     return results;
+  }
+
+  static List<HistoryEntry> _groupEntriesByTime(List<HistoryEntry> entries) {
+    if (entries.isEmpty) return [];
+
+    final Map<String, HistoryEntry> grouped = {};
+
+    for (var entry in entries) {
+      // Round to 5 minutes
+      final roundedTime = DateTime(
+        entry.timestamp.year,
+        entry.timestamp.month,
+        entry.timestamp.day,
+        entry.timestamp.hour,
+        (entry.timestamp.minute / 5).floor() * 5,
+      );
+
+      // Key for grouping: same battery, same type, same location, same reason, same source, same 5-min block
+      final key = '${entry.batteryId}_${entry.type}_${entry.location}_${entry.reason}_${entry.source}_${roundedTime.toIso8601String()}';
+
+      if (grouped.containsKey(key)) {
+        grouped[key]!.quantity += entry.quantity;
+      } else {
+        // Create a new entry for the group
+        grouped[key] = HistoryEntry(
+          id: entry.id,
+          batteryId: entry.batteryId,
+          batteryName: entry.batteryName,
+          batteryType: entry.batteryType,
+          packSize: entry.packSize,
+          type: entry.type,
+          location: entry.location,
+          quantity: entry.quantity,
+          timestamp: roundedTime,
+          reason: entry.reason,
+          source: entry.source,
+        );
+      }
+    }
+
+    return grouped.values.toList();
   }
 
   static List<HierarchicalGroup> _groupByModel(

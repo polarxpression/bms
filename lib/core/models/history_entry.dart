@@ -4,6 +4,8 @@ class HistoryEntry {
   String id;
   String batteryId;
   String batteryName;
+  String batteryType;
+  int packSize;
   String type; // 'in' or 'out'
   String location; // 'stock' or 'gondola'
   int quantity;
@@ -15,6 +17,8 @@ class HistoryEntry {
     required this.id,
     required this.batteryId,
     required this.batteryName,
+    this.batteryType = 'AA',
+    this.packSize = 1,
     required this.type,
     required this.location,
     required this.quantity,
@@ -27,6 +31,8 @@ class HistoryEntry {
     return {
       'batteryId': batteryId,
       'batteryName': batteryName,
+      'batteryType': batteryType,
+      'packSize': packSize,
       'type': type,
       'location': location,
       'quantity': quantity,
@@ -41,6 +47,8 @@ class HistoryEntry {
       id: id,
       batteryId: map['batteryId'] ?? '',
       batteryName: map['batteryName'] ?? '',
+      batteryType: map['batteryType'] ?? 'AA',
+      packSize: map['packSize'] ?? 1,
       type: map['type'] ?? '',
       location: map['location'] ?? '',
       quantity: map['quantity'] ?? 0,

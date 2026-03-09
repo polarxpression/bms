@@ -511,10 +511,25 @@ class AppState extends ChangeNotifier {
     String source = 'form', // 'form' or 'map' or 'system'
   }) async {
     if (quantity == 0) return;
+
+    // Find battery details for history record
+    String bType = 'AA';
+    int bPackSize = 1;
+
+    try {
+      final battery = _batteries.firstWhere((b) => b.id == batteryId);
+      bType = battery.type;
+      bPackSize = battery.packSize;
+    } catch (_) {
+      // If not found in memory, defaults are used
+    }
+
     final entry = HistoryEntry(
       id: '', // Auto-gen
       batteryId: batteryId,
       batteryName: batteryName,
+      batteryType: bType,
+      packSize: bPackSize,
       type: type,
       location: location,
       quantity: quantity,
@@ -837,7 +852,7 @@ class AppState extends ChangeNotifier {
     groups.forEach((key, items) {
       int totalStock = 0;
       int totalGondola = 0;
-      int maxGondolaLimit = 0;
+      int totalGondolaLimit = 0;
 
       // Logic for Min Stock Threshold
       bool anyManual = false;
@@ -848,16 +863,19 @@ class AppState extends ChangeNotifier {
       double groupMonthlyConsumption = 0;
 
       for (var b in items) {
-        // Only count stock from non-gondola items to match restock logic
         final isGondola =
             b.location.toLowerCase().contains('gondola') ||
             b.location.toLowerCase().contains('gôndola');
-        if (!isGondola) {
+
+        // Sum Gondola Quantities and Limits
+        if (isGondola) {
+          totalGondola += b.gondolaQuantity;
+          totalGondolaLimit +=
+              b.gondolaLimit > 0 ? b.gondolaLimit : _defaultGondolaCapacity;
+        } else {
+          // Sum Reserve Stock (items NOT in gondola locations)
           totalStock += b.quantity;
         }
-
-        // Sum Gondola Quantities
-        totalGondola += b.gondolaQuantity;
 
         // Sum Consumption
         groupMonthlyConsumption += _monthlyConsumption[b.id] ?? 0;
@@ -867,10 +885,6 @@ class AppState extends ChangeNotifier {
           if (b.minStockThreshold > maxManualThreshold) {
             maxManualThreshold = b.minStockThreshold;
           }
-        }
-
-        if (b.gondolaLimit > maxGondolaLimit) {
-          maxGondolaLimit = b.gondolaLimit;
         }
 
         if (primary.location != 'Estoque' && b.location == 'Estoque') {
@@ -884,9 +898,6 @@ class AppState extends ChangeNotifier {
 
       // DYNAMIC BUY LOGIC:
       // If consumption suggests we need more, increase threshold.
-      // Target: Maintain 1 month of stock based on recent consumption.
-      // Or 1.5 months? Let's use 1 month for now or make it configurable?
-      // Defaulting to 1 month cover.
       final dynamicThreshold = groupMonthlyConsumption.ceil();
       bool isDynamic = false;
 
@@ -895,24 +906,10 @@ class AppState extends ChangeNotifier {
         isDynamic = true;
       }
 
-      // final effectiveGondolaLimit = maxGondolaLimit > 0 ? maxGondolaLimit : _defaultGondolaCapacity;
+      // NEW Formula: maximum capacity - current quantity - stock quantity > 6
+      int needed = totalGondolaLimit - totalGondola - totalStock;
 
-      bool shouldAdd = false;
-
-      // Rule: Always use totalStock (Reserve) as the primary stock to check.
-      // We do not fall back to gondola stock because that masks 'Empty Reserve' situations
-      // (e.g., when Gondola is full but Reserve is empty, we still want to buy if threshold > 0).
-      int stockToCheck = totalStock;
-
-      // Special case: If user set manual threshold to 0, they likely want to DISABLE the alert.
-      // So if anyManual is true and effectiveThreshold is 0, we SKIP adding it.
-      if (anyManual && effectiveThreshold == 0 && !isDynamic) {
-        shouldAdd = false;
-      } else if (stockToCheck <= effectiveThreshold) {
-        shouldAdd = true;
-      }
-
-      if (shouldAdd) {
+      if (needed > 6) {
         buyList.add(
           Battery(
             id: primary.id,
@@ -922,20 +919,17 @@ class AppState extends ChangeNotifier {
             model: primary.model,
             barcode: primary.barcode,
             imageUrl: primary.imageUrl,
-            quantity:
-                stockToCheck, // VISUAL: Effective Stock used for decision (Stock or Gondola fallback)
+            // Map values so UI and Report display correctly: needed = minStockThreshold - quantity
+            quantity: totalStock + totalGondola, // VISUAL: Total currently in house
             gondolaQuantity: totalGondola,
             location: primary.location,
-            minStockThreshold:
-                effectiveThreshold, // VISUAL: Target Threshold (Dynamic or Static)
-            useDefaultMinStock: !anyManual, // VISUAL
+            minStockThreshold: totalGondolaLimit, // VISUAL: Total capacity target
+            useDefaultMinStock: !anyManual,
             // Hack: Use 'notes' to pass metadata to UI about dynamic nature
             notes: isDynamic
                 ? 'dynamic:${groupMonthlyConsumption.toStringAsFixed(1)}'
                 : '',
-            gondolaLimit: maxGondolaLimit > 0
-                ? maxGondolaLimit
-                : _defaultGondolaCapacity,
+            gondolaLimit: totalGondolaLimit,
             purchaseDate: primary.purchaseDate,
             lastChanged: primary.lastChanged,
             packSize: primary.packSize,

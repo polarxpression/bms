@@ -278,7 +278,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       'batteryName': entry.batteryName,
                       'brand': battery.brand,
                       'model': battery.model,
-                      'type': battery.type,
+                      'type': entry.batteryType,
+                      'packSize': entry.packSize,
                       'barcode': battery.barcode,
                       'reason': entry.reason,
                       'source': entry.source,
@@ -459,16 +460,24 @@ class _GroupNodeState extends State<GroupNode> {
                             letterSpacing: -0.5,
                           ),
                         ),
-                        if (widget.level == 0 && group.battery != null && group.type == GroupingType.model)
-                          Text(
-                            '${group.battery!.brand} • ${group.battery!.type} • ESTOQUE: ${group.battery!.quantity}',
-                            style: const TextStyle(
-                              color: Colors.grey,
-                              fontSize: 9,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 1,
-                            ),
-                          ),
+                        if (group.type == GroupingType.model)
+                          Builder(builder: (context) {
+                            final firstEntry = group.entries.isNotEmpty ? group.entries[0] : null;
+                            final type = group.battery?.type ?? firstEntry?.batteryType ?? 'AA';
+                            final packSize = group.battery?.packSize ?? firstEntry?.packSize ?? 1;
+                            final brand = group.battery?.brand ?? (firstEntry?.batteryName.split(' ').first ?? '');
+                            final stock = group.battery?.quantity;
+
+                            return Text(
+                              '$brand • $type • PK$packSize${stock != null ? " • ESTOQUE: $stock" : ""}',
+                              style: const TextStyle(
+                                color: Colors.grey,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 1,
+                              ),
+                            );
+                          }),
                       ],
                     ),
                   ),
@@ -586,7 +595,6 @@ class _HistoryList extends StatelessWidget {
         itemBuilder: (context, index) {
           final entry = sorted[index];
           final isIn = entry.type == 'in';
-          final battery = batteries.firstWhere((b) => b.id == entry.batteryId, orElse: () => batteries.first);
 
           return Padding(
             padding: const EdgeInsets.all(12),
@@ -619,7 +627,7 @@ class _HistoryList extends StatelessWidget {
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
-                              battery.type.toUpperCase(),
+                              '${entry.batteryType.toUpperCase()} • PK${entry.packSize}',
                               style: const TextStyle(color: Colors.grey, fontSize: 8, fontWeight: FontWeight.w900),
                             ),
                           ),

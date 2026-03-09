@@ -192,18 +192,19 @@ class SearchQueryParser {
     bool isLiteral = false,
   }) {
     List<String?> haystack = [
-      _getProperty(item, 'name'),
-      _getProperty(item, 'batteryName'),
-      _getProperty(item, 'brand'),
-      _getProperty(item, 'model'),
-      _getProperty(item, 'type'),
-      _getProperty(item, 'barcode'),
-      _getProperty(item, 'location'),
-      _getProperty(item, 'notes'),
-      _getProperty(item, 'voltage'),
-      _getProperty(item, 'chemistry'),
-      _getProperty(item, 'reason'),
-      _getProperty(item, 'source'),
+      _getProperty(item, 'name')?.toString(),
+      _getProperty(item, 'batteryName')?.toString(),
+      _getProperty(item, 'brand')?.toString(),
+      _getProperty(item, 'model')?.toString(),
+      _getProperty(item, 'type')?.toString(),
+      _getProperty(item, 'packSize')?.toString(),
+      _getProperty(item, 'barcode')?.toString(),
+      _getProperty(item, 'location')?.toString(),
+      _getProperty(item, 'notes')?.toString(),
+      _getProperty(item, 'voltage')?.toString(),
+      _getProperty(item, 'chemistry')?.toString(),
+      _getProperty(item, 'reason')?.toString(),
+      _getProperty(item, 'source')?.toString(),
     ];
     return haystack.any((s) => s != null && _matchString(s, pattern, isLiteral: isLiteral));
   }
