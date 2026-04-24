@@ -148,6 +148,30 @@ class NotificationService {
     );
   }
 
+  Future<void> showNotification({
+    required int id,
+    required String title,
+    required String body,
+    String? payload,
+    String channelId = 'general',
+    String channelName = 'Geral',
+  }) async {
+    await flutterLocalNotificationsPlugin.show(
+      id: id,
+      title: title,
+      body: body,
+      notificationDetails: NotificationDetails(
+        android: AndroidNotificationDetails(
+          channelId,
+          channelName,
+          importance: Importance.high,
+          priority: Priority.high,
+        ),
+      ),
+      payload: payload,
+    );
+  }
+
   tz.TZDateTime _nextInstanceOfMonday(int hour, int minute) {
     tz.TZDateTime now = tz.TZDateTime.now(tz.local);
     tz.TZDateTime scheduledDate = tz.TZDateTime(

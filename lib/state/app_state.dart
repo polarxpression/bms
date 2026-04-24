@@ -6,6 +6,7 @@ import 'package:bms/core/models/battery.dart';
 import 'package:bms/core/models/battery_map.dart';
 import 'package:bms/core/models/history_entry.dart';
 import 'package:bms/core/models/app_notification.dart';
+import 'package:bms/core/services/notification_service.dart';
 
 class AppState extends ChangeNotifier {
   List<Battery> _batteries = [];
@@ -14,6 +15,9 @@ class AppState extends ChangeNotifier {
   StreamSubscription<DocumentSnapshot>? _settingsSubscription;
   StreamSubscription<QuerySnapshot>? _cellsSubscription;
   StreamSubscription<QuerySnapshot>? _notificationsSubscription;
+  StreamSubscription<QuerySnapshot>? _brandsSubscription;
+  StreamSubscription<QuerySnapshot>? _modelsSubscription;
+  StreamSubscription<QuerySnapshot>? _typesSubscription;
 
   final CollectionReference _collection = FirebaseFirestore.instance.collection(
     'batteries',
@@ -27,12 +31,23 @@ class AppState extends ChangeNotifier {
   final CollectionReference _notificationsCollection = FirebaseFirestore
       .instance
       .collection('notifications');
+  final CollectionReference _brandsCollection = FirebaseFirestore.instance
+      .collection('brands');
+  final CollectionReference _modelsCollection = FirebaseFirestore.instance
+      .collection('models');
+  final CollectionReference _typesCollection = FirebaseFirestore.instance
+      .collection('types');
 
   // Settings
   int _defaultGondolaCapacity = 20;
   int _defaultMinStockThreshold = 10;
   int _daysToAnalyze = 90; // Default days for analysis
   String _imgbbApiKey = ''; // NEW
+
+  // Metadata
+  List<String> _brands = [];
+  List<String> _models = [];
+  List<String> _types = [];
 
   // Maps Data
   List<BatteryMap> _maps = [];
@@ -48,6 +63,7 @@ class AppState extends ChangeNotifier {
 
   // Notifications Data
   List<AppNotification> _notifications = [];
+  DateTime? _lastNotificationTimestamp;
 
   // Navigation State
   int _currentTabIndex = 0;
@@ -58,6 +74,9 @@ class AppState extends ChangeNotifier {
   int get defaultMinStockThreshold => _defaultMinStockThreshold;
   int get daysToAnalyze => _daysToAnalyze;
   String get imgbbApiKey => _imgbbApiKey; // NEW
+  List<String> get brands => List.unmodifiable(_brands);
+  List<String> get models => List.unmodifiable(_models);
+  List<String> get types => List.unmodifiable(_types);
   Map<String, String> get batteryMap => Map.unmodifiable(_batteryMap);
   List<BatteryMap> get maps => List.unmodifiable(_maps);
   Map<String, double> get monthlyConsumption =>
@@ -192,6 +211,8 @@ class AppState extends ChangeNotifier {
   }
 
   void _initRealtimeUpdates() {
+    _lastNotificationTimestamp = DateTime.now();
+
     // Batteries
     _subscription = _collection.snapshots().listen((snapshot) {
       _batteries = snapshot.docs.map((doc) {
@@ -202,6 +223,24 @@ class AppState extends ChangeNotifier {
     }, onError: (e) {
       debugPrint('Error loading batteries: $e');
       _isLoading = false;
+      notifyListeners();
+    });
+
+    // Brands
+    _brandsSubscription = _brandsCollection.snapshots().listen((snapshot) {
+      _brands = snapshot.docs.map((doc) => doc.id).toList()..sort();
+      notifyListeners();
+    });
+
+    // Models
+    _modelsSubscription = _modelsCollection.snapshots().listen((snapshot) {
+      _models = snapshot.docs.map((doc) => doc.id).toList()..sort();
+      notifyListeners();
+    });
+
+    // Types
+    _typesSubscription = _typesCollection.snapshots().listen((snapshot) {
+      _types = snapshot.docs.map((doc) => doc.id).toList()..sort();
       notifyListeners();
     });
 
@@ -264,6 +303,32 @@ class AppState extends ChangeNotifier {
         .limit(50)
         .snapshots()
         .listen((snapshot) {
+          bool hasNew = false;
+
+          for (var change in snapshot.docChanges) {
+            if (change.type == DocumentChangeType.added) {
+              final data = change.doc.data() as Map<String, dynamic>;
+              final timestamp = (data['timestamp'] as Timestamp?)?.toDate();
+
+              if (timestamp != null &&
+                  _lastNotificationTimestamp != null &&
+                  timestamp.isAfter(_lastNotificationTimestamp!)) {
+                // Show Local Notification
+                NotificationService().showNotification(
+                  id: change.doc.id.hashCode,
+                  title: data['title'] ?? 'Notificação',
+                  body: data['message'] ?? '',
+                  payload: data['actionUrl'],
+                );
+                hasNew = true;
+              }
+            }
+          }
+
+          if (hasNew) {
+            _lastNotificationTimestamp = DateTime.now();
+          }
+
           _notifications = snapshot.docs.map((doc) {
             return AppNotification.fromMap(
               doc.data() as Map<String, dynamic>,
@@ -280,7 +345,35 @@ class AppState extends ChangeNotifier {
     _settingsSubscription?.cancel();
     _cellsSubscription?.cancel();
     _notificationsSubscription?.cancel();
+    _brandsSubscription?.cancel();
+    _modelsSubscription?.cancel();
+    _typesSubscription?.cancel();
     super.dispose();
+  }
+
+  // Metadata CRUD
+  Future<void> addBrand(String name) async {
+    await _brandsCollection.doc(name).set({'createdAt': FieldValue.serverTimestamp()});
+  }
+
+  Future<void> deleteBrand(String name) async {
+    await _brandsCollection.doc(name).delete();
+  }
+
+  Future<void> addModel(String name) async {
+    await _modelsCollection.doc(name).set({'createdAt': FieldValue.serverTimestamp()});
+  }
+
+  Future<void> deleteModel(String name) async {
+    await _modelsCollection.doc(name).delete();
+  }
+
+  Future<void> addType(String name) async {
+    await _typesCollection.doc(name).set({'createdAt': FieldValue.serverTimestamp()});
+  }
+
+  Future<void> deleteType(String name) async {
+    await _typesCollection.doc(name).delete();
   }
 
   Future<void> updateDefaultCapacity(int newCap) async {

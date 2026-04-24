@@ -177,21 +177,38 @@ class _BatteryFormScreenState extends State<BatteryFormScreen> {
     final state = AppStateProvider.of(context);
 
     List<String> getOptions(
+      List<String> metadataOptions,
       List<Battery> allBatteries,
       String Function(Battery) extractor,
       String currentVal,
     ) {
-      final Set<String> options = allBatteries
-          .map(extractor)
-          .where((s) => s.isNotEmpty)
-          .toSet();
+      final Set<String> options = metadataOptions.toSet();
+      // Add existing values from batteries (for legacy/migration)
+      options.addAll(
+        allBatteries.map(extractor).where((s) => s.isNotEmpty),
+      );
       if (currentVal.isNotEmpty) options.add(currentVal);
       return options.toList()..sort();
     }
 
-    final existingBrands = getOptions(state.batteries, (b) => b.brand, _brand);
-    final existingModels = getOptions(state.batteries, (b) => b.model, _model);
-    final existingTypes = getOptions(state.batteries, (b) => b.type, _type);
+    final existingBrands = getOptions(
+      state.brands,
+      state.batteries,
+      (b) => b.brand,
+      _brand,
+    );
+    final existingModels = getOptions(
+      state.models,
+      state.batteries,
+      (b) => b.model,
+      _model,
+    );
+    final existingTypes = getOptions(
+      state.types,
+      state.batteries,
+      (b) => b.type,
+      _type,
+    );
 
     // Filter batteries for "Stock" linking
     // Exclude self and non-stock items

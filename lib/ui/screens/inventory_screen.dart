@@ -4,6 +4,7 @@ import 'package:bms/core/models/battery.dart';
 import 'package:bms/state/app_state.dart';
 import 'package:bms/core/utils/search_query_parser.dart';
 import 'package:bms/ui/screens/battery_form_screen.dart';
+import 'package:bms/ui/screens/barcode_scanner_simple.dart';
 
 enum SortOption { name, brand, type, stockQty, gondolaQty }
 
@@ -43,6 +44,20 @@ class _InventoryScreenState extends State<InventoryScreen> {
         _isSelectionMode = false;
       }
     });
+  }
+
+  Future<void> _scanBarcode() async {
+    final scannedCode = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(builder: (context) => const BarcodeScannerSimple()),
+    );
+
+    if (scannedCode != null && scannedCode.isNotEmpty) {
+      setState(() {
+        _query = scannedCode;
+        _searchController.text = scannedCode;
+      });
+    }
   }
 
   Future<void> _deleteSelected(AppState state) async {
@@ -235,15 +250,26 @@ class _InventoryScreenState extends State<InventoryScreen> {
                       Icons.search,
                       color: Color(0xFFEC4899),
                     ),
-                    suffixIcon: _query.isNotEmpty
-                        ? IconButton(
+                    suffixIcon: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (_query.isNotEmpty)
+                          IconButton(
                             icon: const Icon(Icons.clear, color: Colors.grey),
                             onPressed: () {
                               setState(() => _query = '');
                               _searchController.clear();
                             },
-                          )
-                        : null,
+                          ),
+                        IconButton(
+                          icon: const Icon(
+                            Icons.qr_code_scanner,
+                            color: Color(0xFFEC4899),
+                          ),
+                          onPressed: _scanBarcode,
+                        ),
+                      ],
+                    ),
                     filled: true,
                     fillColor: surfaceColor,
                     border: OutlineInputBorder(
